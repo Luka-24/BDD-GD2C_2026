@@ -18,6 +18,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Localidad' AND schema_id =
 CREATE TABLE SOMOS_QUATRO_LOCOS.Localidad (
     id_localidad INT,
     id_provincia INT NULL,
+    localidad VARCHAR(255) NULL,
 
     CONSTRAINT PK_Localidad PRIMARY KEY (id_localidad), 
     CONSTRAINT FK_Localidad_Provincia FOREIGN KEY (id_provincia) REFERENCES SOMOS_QUATRO_LOCOS.Provincia (id_provincia)
@@ -114,7 +115,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Accesorio (
     nro_categoria_accesorio INT,
     id_marca INT,
 
-    CONSTRAINT PK_Accesorio PRIMARY KEY (nro_categoria_accesorio),
+    CONSTRAINT PK_Accesorio PRIMARY KEY (cod_producto), -- cambie nro_categoria_accesorio porque sino solo iba a poder parecer una vez por tabla
     CONSTRAINT FK_Accesorio_Producto FOREIGN KEY (cod_producto) REFERENCES SOMOS_QUATRO_LOCOS.Producto (cod_producto),
     CONSTRAINT FK_Accesorio_CategoriaAccesorio FOREIGN KEY (nro_categoria_accesorio) REFERENCES SOMOS_QUATRO_LOCOS.Categoria_Accesorio (nro_categoria_accesorio),
     CONSTRAINT FK_Accesorio_Marca FOREIGN KEY (id_marca) REFERENCES SOMOS_QUATRO_LOCOS.Marca (id_marca)
@@ -175,7 +176,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Estado_Bicicleta_Alquiler (
     estado_bicicleta_alquiler VARCHAR(255) NULL,
     
 
-    CONSTRAINT PK_Estado PRIMARY KEY (id_estado_bicicleta_alquiler),
+    CONSTRAINT PK_EstadoBicicletaAlquiler PRIMARY KEY (id_estado_bicicleta_alquiler)
 );
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Bicicleta_Alquiler' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
@@ -190,6 +191,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Bicicleta_Alquiler (
     CONSTRAINT PK_BicicletaAlquiler PRIMARY KEY (nro_serie_bicicleta), 
     CONSTRAINT FK_BicicletaAlquiler_Bicicleta FOREIGN KEY (nro_serie_bicicleta) REFERENCES SOMOS_QUATRO_LOCOS.Bicicleta (nro_serie_bicicleta),
     CONSTRAINT FK_BicicletaAlquiler_EstadoBicicletaAlquiler FOREIGN KEY (id_estado) REFERENCES SOMOS_QUATRO_LOCOS.Estado_Bicicleta_Alquiler (id_estado_bicicleta_alquiler)
+    CONSTRAINT FK_BicicletaAlquiler_Local FOREIGN KEY (id_local) REFERENCES SOMOS_QUATRO_LOCOS.Local (id_local
 );
 
 
@@ -253,7 +255,8 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Alquiler (
     id_forma_pago INT NULL,
     id_estado INT NULL,
     nro_serie_bicicleta VARCHAR(255) NULL,
-    fecha_fin_patada_alquiler DATETIME2(6) NULL,
+    fecha_fin_pactada_alquiler DATETIME2(6) NULL,
+    fecha_devolucion_real_alquiler DATETIME2(6) NULL,
     fecha_inicio_alquiler DATETIME2(6) NULL,
     importe_total_alquiler NUMERIC(38, 2) NULL,
     id_local INT,
