@@ -8,7 +8,7 @@ GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Provincia' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Provincia (
-    id_provincia INT,
+    id_provincia INT IDENTITY(1,1),
     provincia VARCHAR(255),
 
     CONSTRAINT PK_Provincia PRIMARY KEY (id_provincia)
@@ -16,7 +16,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Provincia (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Localidad' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Localidad (
-    id_localidad INT,
+    id_localidad INT IDENTITY(1,1),
     id_provincia INT NULL,
     localidad VARCHAR(255) NULL,
 
@@ -26,7 +26,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Localidad (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Marca' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Marca (
-    id_marca INT,
+    id_marca INT IDENTITY(1,1),
     marca VARCHAR(255),
 
     CONSTRAINT PK_Marca PRIMARY KEY (id_marca)
@@ -34,7 +34,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Marca (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Estado_Reparacion' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Estado_Reparacion (
-    id_estado_reparacion INT,
+    id_estado_reparacion INT IDENTITY(1,1),
     estado_reparacion VARCHAR(255),
 
     CONSTRAINT PK_EstadoReparacion PRIMARY KEY (id_estado_reparacion)
@@ -42,7 +42,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Estado_Reparacion (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Estado_Alquiler' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Estado_Alquiler (
-    id_estado_alquiler INT,
+    id_estado_alquiler INT IDENTITY(1,1),
     estado_alquiler VARCHAR(255) NULL,
 
     CONSTRAINT PK_EstadoAlquiler PRIMARY KEY (id_estado_alquiler)
@@ -50,7 +50,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Estado_Alquiler (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Categoria_Accesorio' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Categoria_Accesorio (
-    nro_categoria_accesorio INT,
+    nro_categoria_accesorio INT IDENTITY(1,1),
     categoria_accesorio VARCHAR(255),
 
     CONSTRAINT PK_CategoriaAccesorio PRIMARY KEY (nro_categoria_accesorio)
@@ -58,7 +58,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Categoria_Accesorio (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Categoria_Bicicleta' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Categoria_Bicicleta (
-    id_categoria_bicicleta INT,
+    id_categoria_bicicleta INT IDENTITY(1,1),
     categoria_bicicleta VARCHAR(255),
 
     CONSTRAINT PK_CategoriaBicicleta PRIMARY KEY (id_categoria_bicicleta)
@@ -66,7 +66,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Categoria_Bicicleta (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Tipo_Producto' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Tipo_Producto (
-    nro_tipo_producto INT,
+    nro_tipo_producto INT IDENTITY(1,1),
     tipo_producto VARCHAR(255),
 
     CONSTRAINT PK_TipoProducto PRIMARY KEY (nro_tipo_producto)
@@ -115,7 +115,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Accesorio (
     nro_categoria_accesorio INT,
     id_marca INT,
 
-    CONSTRAINT PK_Accesorio PRIMARY KEY (cod_producto), -- cambie nro_categoria_accesorio porque sino solo iba a poder parecer una vez por tabla
+    CONSTRAINT PK_Accesorio PRIMARY KEY (cod_producto),
     CONSTRAINT FK_Accesorio_Producto FOREIGN KEY (cod_producto) REFERENCES SOMOS_QUATRO_LOCOS.Producto (cod_producto),
     CONSTRAINT FK_Accesorio_CategoriaAccesorio FOREIGN KEY (nro_categoria_accesorio) REFERENCES SOMOS_QUATRO_LOCOS.Categoria_Accesorio (nro_categoria_accesorio),
     CONSTRAINT FK_Accesorio_Marca FOREIGN KEY (id_marca) REFERENCES SOMOS_QUATRO_LOCOS.Marca (id_marca)
@@ -134,7 +134,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Bicicleta_Venta (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Cliente' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Cliente (
-    nro_cliente INT,
+    nro_cliente INT IDENTITY(1,1),
     nombre_cliente VARCHAR(255) NULL,
     apellido_cliente VARCHAR(255) NULL,
     dni_cliente VARCHAR(255) NULL,
@@ -150,7 +150,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Cliente (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Forma_Pago' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Forma_Pago (
-    id_forma_pago INT,
+    id_forma_pago INT IDENTITY(1,1),
     forma_pago VARCHAR(255) NULL,
 
     CONSTRAINT PK_FormaPago PRIMARY KEY (id_forma_pago)
@@ -158,7 +158,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Forma_Pago (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Local' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Local (
-    id_local INT, 
+    id_local INT IDENTITY(1,1), 
     nombre_local VARCHAR(255) NULL,
     telefono_local VARCHAR(255) NULL,
     email_local VARCHAR(255) NULL,
@@ -172,7 +172,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Local (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Estado_Bicicleta_Alquiler' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Estado_Bicicleta_Alquiler (
-    id_estado_bicicleta_alquiler INT, 
+    id_estado_bicicleta_alquiler INT IDENTITY(1,1), 
     estado_bicicleta_alquiler VARCHAR(255) NULL,
     
 
@@ -190,14 +190,14 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Bicicleta_Alquiler (
 
     CONSTRAINT PK_BicicletaAlquiler PRIMARY KEY (nro_serie_bicicleta), 
     CONSTRAINT FK_BicicletaAlquiler_Bicicleta FOREIGN KEY (nro_serie_bicicleta) REFERENCES SOMOS_QUATRO_LOCOS.Bicicleta (nro_serie_bicicleta),
-    CONSTRAINT FK_BicicletaAlquiler_EstadoBicicletaAlquiler FOREIGN KEY (id_estado) REFERENCES SOMOS_QUATRO_LOCOS.Estado_Bicicleta_Alquiler (id_estado_bicicleta_alquiler)
-    CONSTRAINT FK_BicicletaAlquiler_Local FOREIGN KEY (id_local) REFERENCES SOMOS_QUATRO_LOCOS.Local (id_local
+    CONSTRAINT FK_BicicletaAlquiler_EstadoBicicletaAlquiler FOREIGN KEY (id_estado) REFERENCES SOMOS_QUATRO_LOCOS.Estado_Bicicleta_Alquiler (id_estado_bicicleta_alquiler),
+    CONSTRAINT FK_BicicletaAlquiler_Local FOREIGN KEY (id_local) REFERENCES SOMOS_QUATRO_LOCOS.Local (id_local)
 );
 
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Empleado' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Empleado (
-    nro_empleado INT,
+    nro_empleado INT IDENTITY(1,1),
     nombre_empleado VARCHAR(255),
     apellido_empleado VARCHAR(255),
     dni_empleado VARCHAR(255),
@@ -218,7 +218,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Empleado (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Venta' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Venta (
-    nro_venta INT,
+    nro_venta INT IDENTITY(1,1),
     nro_empleado INT, 
     nro_cliente INT,
     id_forma_pago INT,
@@ -249,7 +249,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Detalle_Venta (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Alquiler' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Alquiler (
-    nro_alquiler INT,
+    nro_alquiler INT IDENTITY(1,1),
     nro_empleado INT NULL, 
     nro_cliente INT NULL,
     id_forma_pago INT NULL,
@@ -272,7 +272,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Alquiler (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Reparacion' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Reparacion (
-    nro_reparacion INT,
+    nro_reparacion INT IDENTITY(1,1),
     nro_empleado INT NULL,
     nro_cliente INT NULL,
     nro_serie_bicicleta VARCHAR(255) NULL,
@@ -296,7 +296,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Reparacion (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Categoria_Repuesto' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Categoria_Repuesto (
-    id_categoria_repuesto INT, 
+    id_categoria_repuesto INT IDENTITY(1,1), 
     categoria_repuesto VARCHAR(255) NULL,
 
     CONSTRAINT PK_CategoriaRepuesto PRIMARY KEY (id_categoria_repuesto)
@@ -331,7 +331,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Detalle_Reparacion (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Proveedor' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Proveedor (
-    id_proveedor INT,
+    id_proveedor INT IDENTITY(1,1),
     razon_social_proveedor VARCHAR(255),
     cuit_proveedor VARCHAR(255),
     telefono_proveedor VARCHAR(255),
@@ -346,7 +346,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Proveedor (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Compra' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Compra (
-    nro_compra INT,
+    nro_compra INT IDENTITY(1,1),
     id_proveedor INT,
     nro_empleado INT,
     fecha_compra DATETIME2(6),
