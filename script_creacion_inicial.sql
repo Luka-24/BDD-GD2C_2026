@@ -353,7 +353,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Compra (
 
     CONSTRAINT PK_Compra PRIMARY KEY (nro_compra),
     CONSTRAINT FK_Compra_Empleado FOREIGN KEY (nro_empleado) REFERENCES SOMOS_QUATRO_LOCOS.Empleado (nro_empleado),
-    CONSTRAINT FK_Compra_FormaPago FOREIGN KEY (id_proveedor) REFERENCES SOMOS_QUATRO_LOCOS.Proveedor (id_proveedor),
+    CONSTRAINT FK_Compra_Proveedor FOREIGN KEY (id_proveedor) REFERENCES SOMOS_QUATRO_LOCOS.Proveedor (id_proveedor),
     constraint FK_Compra_Local FOREIGN KEY (id_local) REFERENCES SOMOS_QUATRO_LOCOS.Local (id_local)
 );
 
@@ -381,11 +381,11 @@ CREATE NONCLUSTERED INDEX INX_Reparacion_Empleado ON SOMOS_QUATRO_LOCOS.Reparaci
 CREATE NONCLUSTERED INDEX INX_Reparacion_Cliente ON SOMOS_QUATRO_LOCOS.Reparacion (nro_cliente);
 CREATE NONCLUSTERED INDEX INX_Reparacion_Bicicleta ON SOMOS_QUATRO_LOCOS.Reparacion (nro_serie_bicicleta);
 CREATE NONCLUSTERED INDEX INX_Reparacion_Local ON SOMOS_QUATRO_LOCOS.Reparacion (id_local);
-CREATE NONCLUSTERED INDEX INX_Reparacion_Estado  ON SOMOS_QUATRO_LOCOS.Reparacion (id_estado_reparacion);
-CREATE NONCLUSTERED INDEX INX_Repuesto_CategoriaRepuesto ON SOMOS_QUATRO_LOCOS.Respuesto (id_categoria)
+CREATE NONCLUSTERED INDEX INX_Reparacion_Estado  ON SOMOS_QUATRO_LOCOS.Reparacion (id_estado);
+CREATE NONCLUSTERED INDEX INX_Repuesto_CategoriaRepuesto ON SOMOS_QUATRO_LOCOS.Repuesto (id_categoria)
 CREATE NONCLUSTERED INDEX INX_Proveedor_Localidad ON SOMOS_QUATRO_LOCOS.Proveedor (id_localidad);
 CREATE NONCLUSTERED INDEX INX_Compra_Empleado ON SOMOS_QUATRO_LOCOS.Compra (nro_empleado);
-CREATE NONCLUSTERED INDEX INX_Compra_FormaPago ON SOMOS_QUATRO_LOCOS.Compra (id_forma_pago);
+CREATE NONCLUSTERED INDEX INX_Compra_FormaPago ON SOMOS_QUATRO_LOCOS.Compra (id_proveedor);
 CREATE NONCLUSTERED INDEX INX_Compra_Local ON SOMOS_QUATRO_LOCOS.Compra (id_local);
 CREATE NONCLUSTERED INDEX INX_ModeloBicileta_Marca ON SOMOS_QUATRO_LOCOS.Modelo_Bicicleta (id_marca);
 CREATE NONCLUSTERED INDEX INX_ModeloBicileta_Categoria ON SOMOS_QUATRO_LOCOS.Modelo_Bicicleta (id_categoria_bicicleta);
@@ -819,7 +819,7 @@ END;
 GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.Migrar_Compra
 AS BEGIN
-    INSERT INTO SOMOS_QUATRO_LOCOS.Compra (nro_compra_origen,id_proveedor, nro_empleado, fecha_compra, total_compra, id_local)
+    INSERT INTO SOMOS_QUATRO_LOCOS.Compra (nro_compra,id_proveedor, nro_empleado, fecha_compra, total_compra, id_local)
         SELECT DISTINCT 
             M.Compra_Nro_Compra AS nro_compra_origen,
             P.id_proveedor,
