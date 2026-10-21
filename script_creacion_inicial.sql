@@ -737,7 +737,7 @@ AS BEGIN
         SELECT DISTINCT 
             E.nro_empleado,
             C.nro_cliente,
-            Reparacion_Nro_Serie_Bici_Reparacion,
+            Bicicleta_Alquiler_Nro_Serie_Bici_Alquiler,
             Reparacion_Fecha_Ingreso_Reparacion AS fecha_ingreso_reparacion,
             Reparacion_Fecha_Entrega_Estimada_Reparacion AS fecha_entrega_estimada_reparacion,
             Reparacion_Fecha_Entrega_Real_Reparacion AS fecha_entrega_real_reparacion,
