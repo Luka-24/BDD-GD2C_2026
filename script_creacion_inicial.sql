@@ -785,11 +785,11 @@ CREATE PROCEDURE SOMOS_QUATRO_LOCOS.Migrar_DetalleReparacion
 AS BEGIN
     INSERT INTO SOMOS_QUATRO_LOCOS.Detalle_Reparacion (cod_repuesto, nro_reparacion, cantidad_repuesto, precio_unitario_repuesto, subtotal_repuesto)
         SELECT DISTINCT 
-            DR.Repuesto_Cod_Repuesto AS cod_repuesto,
+            M.Repuesto_Cod_Repuesto AS cod_repuesto,
             R.nro_reparacion,
-            DR.Detalle_Reparacion_Cantidad_Repuesto AS cantidad_repuesto,
-            DR.Detalle_Reparacion_Precio_Unitario_Repuesto AS precio_unitario_repuesto,
-            DR.Detalle_Reparacion_Subtotal_Repuesto AS subtotal_repuesto
+            M.Detalle_Reparacion_Cantidad_Repuesto AS cantidad_repuesto,
+            M.Detalle_Reparacion_Precio_Unitario_Repuesto AS precio_unitario_repuesto,
+            M.Detalle_Reparacion_Subtotal_Repuesto AS subtotal_repuesto
         FROM gd_esquema.Maestra M
         LEFT JOIN SOMOS_QUATRO_LOCOS.Reparacion R ON R.nro_reparacion = M.Reparacion_Nro_Reparacion
         LEFT JOIN SOMOS_QUATRO_LOCOS.Repuesto DR ON DR.cod_repuesto = M.Repuesto_Cod_Repuesto
