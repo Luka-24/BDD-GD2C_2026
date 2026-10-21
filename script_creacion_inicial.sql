@@ -712,7 +712,7 @@ AS BEGIN
             E.nro_empleado,
             C.nro_cliente,
             FP.id_forma_pago,
-            EA.id_estado_bicicleta_alquiler,
+            EA.id_estado_alquiler,
             B.nro_serie_bicicleta,
             Alquiler_Fecha_Fin_Pactada_Alquiler AS fecha_fin_pactada_alquiler,
             Alquiler_Fecha_Devolucion_Real_Alquiler AS fecha_devolucion_real_alquiler,
