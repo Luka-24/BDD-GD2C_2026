@@ -344,7 +344,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Proveedor (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Compra' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Compra (
-    nro_compra INT IDENTITY(1,1),
+    nro_compra INT INT, -- IDENTITI(1,1) traia problemas al migrar, 
     id_proveedor INT,
     nro_empleado INT,
     fecha_compra DATETIME2(6),
