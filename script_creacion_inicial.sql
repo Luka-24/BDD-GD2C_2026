@@ -86,14 +86,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Modelo_Bicicleta (
     CONSTRAINT FK_ModeloBicicleta_CategoriaBicicleta FOREIGN KEY (id_categoria_bicicleta) REFERENCES SOMOS_QUATRO_LOCOS.Categoria_Bicicleta (id_categoria_bicicleta)
 );
 
-IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Bicicleta' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
-CREATE TABLE SOMOS_QUATRO_LOCOS.Bicicleta (
-    nro_serie_bicicleta VARCHAR(255),
-    modelo_bicicleta VARCHAR(255),
-
-    CONSTRAINT PK_Bicicleta PRIMARY KEY (nro_serie_bicicleta),
-    CONSTRAINT FK_Bicicleta_ModeloBicicleta FOREIGN KEY (modelo_bicicleta) REFERENCES SOMOS_QUATRO_LOCOS.Modelo_Bicicleta (modelo_bicicleta)
-);
+-- BORRE CREATE BICICLETA
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Producto' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Producto (
@@ -123,13 +116,13 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Accesorio (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Bicicleta_Venta' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Bicicleta_Venta (
-    nro_serie_bicicleta VARCHAR(255),
-    meses_garantia_bici_venta INT,
     cod_producto VARCHAR(255),
+    modelo_bicicleta VARCHAR(255),
+    meses_garantia_bici_venta INT,
 
-    CONSTRAINT PK_BicicletaVenta PRIMARY KEY (nro_serie_bicicleta),
-    CONSTRAINT FK_BicicletaVenta_Bicicleta FOREIGN KEY (nro_serie_bicicleta) REFERENCES SOMOS_QUATRO_LOCOS.Bicicleta (nro_serie_bicicleta),
-    CONSTRAINT FK_BicicletaVenta_Producto FOREIGN KEY (cod_producto) REFERENCES SOMOS_QUATRO_LOCOS.Producto (cod_producto)
+    CONSTRAINT PK_BicicletaVenta PRIMARY KEY (cod_producto),
+    CONSTRAINT FK_BicicletaVenta_Producto FOREIGN KEY (cod_producto) REFERENCES SOMOS_QUATRO_LOCOS.Producto (cod_producto),
+    CONSTRAINT FK_BicicletaVenta_Modelo FOREIGN KEY (modelo_bicicleta) REFERENCES SOMOS_QUATRO_LOCOS.Modelo_Bicicleta (modelo_bicicleta)
 );
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Cliente' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
@@ -182,14 +175,14 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Estado_Bicicleta_Alquiler (
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Bicicleta_Alquiler' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Bicicleta_Alquiler (
     nro_serie_bicicleta VARCHAR(255),
-    id_estado INT NULL, 
+    modelo_bicicleta VARCHAR(255),
+    id_estado INT NULL,
     precio_bici_alquiler_hora DECIMAL(38, 2) NULL,
     precio_bici_alquiler_dia DECIMAL(38, 2) NULL,
     id_local INT NULL,
-    
 
-    CONSTRAINT PK_BicicletaAlquiler PRIMARY KEY (nro_serie_bicicleta), 
-    CONSTRAINT FK_BicicletaAlquiler_Bicicleta FOREIGN KEY (nro_serie_bicicleta) REFERENCES SOMOS_QUATRO_LOCOS.Bicicleta (nro_serie_bicicleta),
+    CONSTRAINT PK_BicicletaAlquiler PRIMARY KEY (nro_serie_bicicleta),
+    CONSTRAINT FK_BicicletaAlquiler_ModeloBicicleta FOREIGN KEY (modelo_bicicleta) REFERENCES SOMOS_QUATRO_LOCOS.Modelo_Bicicleta (modelo_bicicleta),
     CONSTRAINT FK_BicicletaAlquiler_EstadoBicicletaAlquiler FOREIGN KEY (id_estado) REFERENCES SOMOS_QUATRO_LOCOS.Estado_Bicicleta_Alquiler (id_estado_bicicleta_alquiler),
     CONSTRAINT FK_BicicletaAlquiler_Local FOREIGN KEY (id_local) REFERENCES SOMOS_QUATRO_LOCOS.Local (id_local)
 );
@@ -234,20 +227,20 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Venta (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Detalle_Venta' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Detalle_Venta (
+    id_detalle_venta INT IDENTITY(1,1),
     nro_venta INT,
     cod_producto VARCHAR(255),
     cantidad_prod_venta INT,
     precio_unitario_prod_venta NUMERIC(38, 2),
     subtotal_prod_venta NUMERIC(38, 2),
 
-    CONSTRAINT PK_DetalleVenta_Producto PRIMARY KEY (cod_producto, nro_venta),
+    CONSTRAINT PK_DetalleVenta PRIMARY KEY (id_detalle_venta),
     CONSTRAINT FK_DetalleVenta_Venta FOREIGN KEY (nro_venta) REFERENCES SOMOS_QUATRO_LOCOS.Venta (nro_venta),
     CONSTRAINT FK_DetalleVenta_Producto FOREIGN KEY (cod_producto) REFERENCES SOMOS_QUATRO_LOCOS.Producto (cod_producto)
 );
-
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Alquiler' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Alquiler (
-    nro_alquiler INT IDENTITY(1,1),
+    nro_alquiler INT,
     nro_empleado INT NULL, 
     nro_cliente INT NULL,
     id_forma_pago INT NULL,
@@ -264,16 +257,16 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Alquiler (
     CONSTRAINT FK_Alquiler_Cliente FOREIGN KEY (nro_cliente) REFERENCES SOMOS_QUATRO_LOCOS.Cliente (nro_cliente),
     CONSTRAINT FK_Alquiler_FormaPago FOREIGN KEY (id_forma_pago) REFERENCES SOMOS_QUATRO_LOCOS.Forma_Pago (id_forma_pago),
     CONSTRAINT FK_Alquiler_EstadoAlquiler FOREIGN KEY (id_estado) REFERENCES SOMOS_QUATRO_LOCOS.Estado_Alquiler (id_estado_alquiler),
-    CONSTRAINT FK_Alquiler_SerieBicicleta FOREIGN KEY (nro_serie_bicicleta) REFERENCES SOMOS_QUATRO_LOCOS.Bicicleta (nro_serie_bicicleta),
-    CONSTRAINT FK_Alquiler_Local FOREIGN KEY (id_local) REFERENCES SOMOS_QUATRO_LOCOS.Local (id_local)
+CONSTRAINT FK_Alquiler_BicicletaAlquiler FOREIGN KEY (nro_serie_bicicleta) REFERENCES SOMOS_QUATRO_LOCOS.Bicicleta_Alquiler (nro_serie_bicicleta),    CONSTRAINT FK_Alquiler_Local FOREIGN KEY (id_local) REFERENCES SOMOS_QUATRO_LOCOS.Local (id_local)
 );
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Reparacion' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Reparacion (
-    nro_reparacion INT IDENTITY(1,1),
+    nro_reparacion INT,
     nro_empleado INT NULL,
     nro_cliente INT NULL,
-    nro_serie_bicicleta VARCHAR(255) NULL,
+    nro_serie_bici_reparacion VARCHAR(255) NULL,
+    modelo_bicicleta VARCHAR(255) NULL,
     fecha_ingreso_reparacion DATETIME2(6) NULL,
     fecha_entrega_estimada_reparacion DATETIME2(6) NULL,
     fecha_entrega_real_reparacion DATETIME2(6) NULL,
@@ -287,7 +280,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Reparacion (
     CONSTRAINT PK_Reparacion PRIMARY KEY (nro_reparacion),
     CONSTRAINT FK_Reparacion_Empleado FOREIGN KEY (nro_empleado) REFERENCES SOMOS_QUATRO_LOCOS.Empleado (nro_empleado),
     CONSTRAINT FK_Reparacion_Cliente FOREIGN KEY (nro_cliente) REFERENCES SOMOS_QUATRO_LOCOS.Cliente (nro_cliente),
-    CONSTRAINT FK_Reparacion_Bicicleta FOREIGN KEY (nro_serie_bicicleta) REFERENCES SOMOS_QUATRO_LOCOS.Bicicleta (nro_serie_bicicleta),
+    CONSTRAINT FK_Reparacion_ModeloBicicleta FOREIGN KEY (modelo_bicicleta) REFERENCES SOMOS_QUATRO_LOCOS.Modelo_Bicicleta (modelo_bicicleta),
     CONSTRAINT FK_Reparacion_Local FOREIGN KEY (id_local) REFERENCES SOMOS_QUATRO_LOCOS.Local (id_local),
     CONSTRAINT FK_Reparacion_Estado FOREIGN KEY (id_estado) REFERENCES SOMOS_QUATRO_LOCOS.Estado_Reparacion (id_estado_reparacion)
 );
@@ -314,17 +307,17 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Repuesto (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Detalle_Reparacion' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Detalle_Reparacion (
+    id_detalle_reparacion INT IDENTITY(1,1),
     cod_repuesto VARCHAR(255),
     nro_reparacion INT,
     cantidad_repuesto INT NULL,
-    precio_unitario_repuesto NUMERIC(38,2), 
+    precio_unitario_repuesto NUMERIC(38,2),
     subtotal_repuesto NUMERIC(38,2),
 
-    CONSTRAINT PK_DetalleReparacion PRIMARY KEY (cod_repuesto, nro_reparacion),
+    CONSTRAINT PK_DetalleReparacion PRIMARY KEY (id_detalle_reparacion),
     CONSTRAINT FK_DetalleReparacion_Repuesto FOREIGN KEY (cod_repuesto) REFERENCES SOMOS_QUATRO_LOCOS.Repuesto (cod_repuesto),
     CONSTRAINT FK_DetalleReparacion_Reparacion FOREIGN KEY (nro_reparacion) REFERENCES SOMOS_QUATRO_LOCOS.Reparacion (nro_reparacion)
 );
-
 
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Proveedor' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
@@ -344,7 +337,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.Proveedor (
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Compra' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.Compra (
-    nro_compra INT INT, -- IDENTITI(1,1) traia problemas al migrar, 
+    nro_compra INT, -- IDENTITI(1,1) traia problemas al migrar, 
     id_proveedor INT,
     nro_empleado INT,
     fecha_compra DATETIME2(6),
@@ -379,28 +372,40 @@ CREATE NONCLUSTERED INDEX INX_Venta_Local ON SOMOS_QUATRO_LOCOS.Venta (id_local)
 CREATE NONCLUSTERED INDEX INX_Empleado_Localidad ON SOMOS_QUATRO_LOCOS.Empleado (id_localidad);
 CREATE NONCLUSTERED INDEX INX_Reparacion_Empleado ON SOMOS_QUATRO_LOCOS.Reparacion (nro_empleado);
 CREATE NONCLUSTERED INDEX INX_Reparacion_Cliente ON SOMOS_QUATRO_LOCOS.Reparacion (nro_cliente);
-CREATE NONCLUSTERED INDEX INX_Reparacion_Bicicleta ON SOMOS_QUATRO_LOCOS.Reparacion (nro_serie_bicicleta);
-CREATE NONCLUSTERED INDEX INX_Reparacion_Local ON SOMOS_QUATRO_LOCOS.Reparacion (id_local);
+CREATE NONCLUSTERED INDEX INX_Reparacion_Modelo ON SOMOS_QUATRO_LOCOS.Reparacion (modelo_bicicleta);CREATE NONCLUSTERED INDEX INX_Reparacion_Local ON SOMOS_QUATRO_LOCOS.Reparacion (id_local);
 CREATE NONCLUSTERED INDEX INX_Reparacion_Estado  ON SOMOS_QUATRO_LOCOS.Reparacion (id_estado);
 CREATE NONCLUSTERED INDEX INX_Repuesto_CategoriaRepuesto ON SOMOS_QUATRO_LOCOS.Repuesto (id_categoria)
 CREATE NONCLUSTERED INDEX INX_Proveedor_Localidad ON SOMOS_QUATRO_LOCOS.Proveedor (id_localidad);
 CREATE NONCLUSTERED INDEX INX_Compra_Empleado ON SOMOS_QUATRO_LOCOS.Compra (nro_empleado);
-CREATE NONCLUSTERED INDEX INX_Compra_FormaPago ON SOMOS_QUATRO_LOCOS.Compra (id_proveedor);
+CREATE NONCLUSTERED INDEX INX_Compra_Proveedor ON SOMOS_QUATRO_LOCOS.Compra (id_proveedor);
 CREATE NONCLUSTERED INDEX INX_Compra_Local ON SOMOS_QUATRO_LOCOS.Compra (id_local);
 CREATE NONCLUSTERED INDEX INX_ModeloBicileta_Marca ON SOMOS_QUATRO_LOCOS.Modelo_Bicicleta (id_marca);
 CREATE NONCLUSTERED INDEX INX_ModeloBicileta_Categoria ON SOMOS_QUATRO_LOCOS.Modelo_Bicicleta (id_categoria_bicicleta);
-CREATE NONCLUSTERED INDEX INX_Bicicleta_ModeloBicicleta ON SOMOS_QUATRO_LOCOS.Bicicleta (modelo_bicicleta);
-CREATE NONCLUSTERED INDEX INX_BicicletaVenta_Producto ON SOMOS_QUATRO_LOCOS.Bicicleta_Venta (cod_producto);
 CREATE NONCLUSTERED INDEX INX_Producto_TipoProducto ON SOMOS_QUATRO_LOCOS.Producto (nro_tipo_producto);
 CREATE NONCLUSTERED INDEX INX_Accesorio_CategoriaAccesorio ON SOMOS_QUATRO_LOCOS.Accesorio (nro_categoria_accesorio);
-CREATE NONCLUSTERED INDEX INX_Accesorio_Producto ON SOMOS_QUATRO_LOCOS.Accesorio (cod_producto);
 CREATE NONCLUSTERED INDEX INX_Accesorio_Marca ON SOMOS_QUATRO_LOCOS.Accesorio (id_marca);
 CREATE NONCLUSTERED INDEX INX_Cliente_Localidad ON SOMOS_QUATRO_LOCOS.Cliente (id_localidad);
 CREATE NONCLUSTERED INDEX INX_Localidad_Provincia ON SOMOS_QUATRO_LOCOS.Localidad (id_provincia);
 CREATE NONCLUSTERED INDEX INX_Local_Localidad ON SOMOS_QUATRO_LOCOS.Local (id_localidad);
 CREATE NONCLUSTERED INDEX INX_BicicletaAlquiler_Estado ON SOMOS_QUATRO_LOCOS.Bicicleta_Alquiler (id_estado);
 CREATE NONCLUSTERED INDEX INX_BicicletaAlquiler_local ON SOMOS_QUATRO_LOCOS.Bicicleta_Alquiler (id_local);
-
+CREATE NONCLUSTERED INDEX INX_BicicletaAlquiler_Modelo ON SOMOS_QUATRO_LOCOS.Bicicleta_Alquiler (modelo_bicicleta);
+CREATE NONCLUSTERED INDEX INX_DetalleVenta_Venta ON SOMOS_QUATRO_LOCOS.Detalle_Venta (nro_venta, cod_producto);
+CREATE NONCLUSTERED INDEX INX_DetalleVenta_Producto ON SOMOS_QUATRO_LOCOS.Detalle_Venta (cod_producto);
+CREATE NONCLUSTERED INDEX INX_DetalleReparacion_Reparacion ON SOMOS_QUATRO_LOCOS.Detalle_Reparacion (nro_reparacion, cod_repuesto);
+CREATE NONCLUSTERED INDEX INX_DetalleReparacion_Repuesto ON SOMOS_QUATRO_LOCOS.Detalle_Reparacion (cod_repuesto);CREATE NONCLUSTERED INDEX INX_DetalleCompra_Producto ON SOMOS_QUATRO_LOCOS.Detalle_Compra (cod_producto);
+CREATE NONCLUSTERED INDEX INX_Venta_FormaPago ON SOMOS_QUATRO_LOCOS.Venta (id_forma_pago);
+CREATE NONCLUSTERED INDEX INX_Alquiler_Empleado ON SOMOS_QUATRO_LOCOS.Alquiler (nro_empleado);
+CREATE NONCLUSTERED INDEX INX_Alquiler_Cliente ON SOMOS_QUATRO_LOCOS.Alquiler (nro_cliente);
+CREATE NONCLUSTERED INDEX INX_Alquiler_FormaPago ON SOMOS_QUATRO_LOCOS.Alquiler (id_forma_pago);
+CREATE NONCLUSTERED INDEX INX_Alquiler_Estado ON SOMOS_QUATRO_LOCOS.Alquiler (id_estado);
+CREATE NONCLUSTERED INDEX INX_Alquiler_Bicicleta ON SOMOS_QUATRO_LOCOS.Alquiler (nro_serie_bicicleta);
+CREATE NONCLUSTERED INDEX INX_Alquiler_Local ON SOMOS_QUATRO_LOCOS.Alquiler (id_local);
+CREATE NONCLUSTERED INDEX INX_Cliente_Dni ON SOMOS_QUATRO_LOCOS.Cliente (dni_cliente);
+CREATE NONCLUSTERED INDEX INX_Empleado_Dni ON SOMOS_QUATRO_LOCOS.Empleado (dni_empleado);
+CREATE NONCLUSTERED INDEX INX_Proveedor_Cuit ON SOMOS_QUATRO_LOCOS.Proveedor (cuit_proveedor);
+CREATE NONCLUSTERED INDEX INX_Local_Nombre ON SOMOS_QUATRO_LOCOS.Local (nombre_local);
+CREATE INDEX INX_BicicletaVenta_Modelo ON SOMOS_QUATRO_LOCOS.Bicicleta_Venta (modelo_bicicleta);
 --MIGRACION
 
 GO
@@ -519,17 +524,7 @@ AS BEGIN
         FROM gd_esquema.Maestra T
             LEFT JOIN SOMOS_QUATRO_LOCOS.Marca M ON M.marca = T.Marca_Marca
             LEFT JOIN SOMOS_QUATRO_LOCOS.Categoria_Bicicleta CB ON CB.categoria_bicicleta = T.Categoria_Bicicleta_Categoria_Bicicleta
-        WHERE T.Categoria_Bicicleta_Categoria_Bicicleta IS NOT NULL AND T.Categoria_Bicicleta_Categoria_Bicicleta IS NOT NULL
-END;
-
-GO
-CREATE PROCEDURE SOMOS_QUATRO_LOCOS.Migrar_Bicicleta
-AS BEGIN
-    INSERT INTO SOMOS_QUATRO_LOCOS.Bicicleta (nro_serie_bicicleta, modelo_bicicleta)
-        SELECT DISTINCT M.Bicicleta_Alquiler_Nro_Serie_Bici_Alquiler AS nro_serie_bicicleta, B.modelo_bicicleta
-        FROM gd_esquema.Maestra M
-            LEFT JOIN SOMOS_QUATRO_LOCOS.Modelo_Bicicleta B ON B.modelo_bicicleta = M.Modelo_Bicicleta_Modelo_Bicicleta
-        WHERE Bicicleta_Alquiler_Nro_Serie_Bici_Alquiler IS NOT NULL AND Modelo_Bicicleta_Modelo_Bicicleta IS NOT NULL
+        WHERE T.Modelo_Bicicleta_Modelo_Bicicleta IS NOT NULL 
 END;
 
 GO
@@ -580,18 +575,33 @@ AS BEGIN
                 FROM SOMOS_QUATRO_LOCOS.Provincia 
                 WHERE provincia = Cliente_Provincia
         )
+        WHERE Cliente_Dni_Cliente IS NOT NULL
 END;
 
-/*GO TODO: ESTA MAL, NO TIENE NUMERO DE SERIE DE BICICLETA
+GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.Migrar_BicicletaVenta
 AS BEGIN
-    INSERT INTO SOMOS_QUATRO_LOCOS.Bicicleta_Venta (nro_serie_bicicleta, meses_garantia_bici_venta, cod_producto)
-        SELECT DISTINCT M.Bicicleta_Alquiler_Nro_Serie_Bici_Alquiler AS nro_serie_bicicleta,
-                        M.Bicicleta_Venta_Meses_Garantia_Bici_Venta AS meses_garantia_bici_venta,
-                        M.Producto_Cod_Producto AS cod_producto
+    -- Bicis que se vendieron: tienen garantia informada
+    INSERT INTO SOMOS_QUATRO_LOCOS.Bicicleta_Venta (cod_producto, modelo_bicicleta, meses_garantia_bici_venta)
+        SELECT DISTINCT M.Producto_Cod_Producto,
+               M.Modelo_Bicicleta_Modelo_Bicicleta,
+               M.Bicicleta_Venta_Meses_Garantia_Bici_Venta
         FROM gd_esquema.Maestra M
-        WHERE Forma_Pago_Forma_Pago IS NOT NULL
-END;*/
+        WHERE M.Producto_Cod_Producto IS NOT NULL
+          AND M.Modelo_Bicicleta_Modelo_Bicicleta IS NOT NULL
+          AND M.Bicicleta_Venta_Meses_Garantia_Bici_Venta IS NOT NULL
+
+    -- Bicis que solo aparecen en compras (nunca se vendieron): sin garantia
+    INSERT INTO SOMOS_QUATRO_LOCOS.Bicicleta_Venta (cod_producto, modelo_bicicleta, meses_garantia_bici_venta)
+        SELECT DISTINCT M.Producto_Cod_Producto,
+               M.Modelo_Bicicleta_Modelo_Bicicleta,
+               NULL
+        FROM gd_esquema.Maestra M
+        WHERE M.Producto_Cod_Producto IS NOT NULL
+          AND M.Modelo_Bicicleta_Modelo_Bicicleta IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM SOMOS_QUATRO_LOCOS.Bicicleta_Venta BV
+                          WHERE BV.cod_producto = M.Producto_Cod_Producto)
+END;
 
 GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.Migrar_FormaPago
@@ -618,6 +628,7 @@ AS BEGIN
                 FROM SOMOS_QUATRO_LOCOS.Provincia 
                 WHERE provincia = Local_Provincia
         )
+        WHERE Local_Nombre_Local IS NOT NULL
 END;
 
 GO
@@ -632,41 +643,43 @@ END;
 GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.Migrar_BicicletaAlquiler
 AS BEGIN
-    INSERT INTO SOMOS_QUATRO_LOCOS.Bicicleta_Alquiler (nro_serie_bicicleta, id_estado, precio_bici_alquiler_hora, precio_bici_alquiler_dia, id_local)
-        SELECT DISTINCT M.Bicicleta_Alquiler_Nro_Serie_Bici_Alquiler AS nro_serie_bicicleta,
-                        E.id_estado_bicicleta_alquiler AS id_estado,
-                        M.Bicicleta_Alquiler_Precio_Bici_Alquiler_Hora AS precio_bici_alquiler_hora,
-                        M.Bicicleta_Alquiler_Precio_Bici_Alquiler_Dia AS precio_bici_alquiler_dia,
-                        L.id_local
+    INSERT INTO SOMOS_QUATRO_LOCOS.Bicicleta_Alquiler
+        (nro_serie_bicicleta, modelo_bicicleta, id_estado, precio_bici_alquiler_hora, precio_bici_alquiler_dia, id_local)
+        SELECT DISTINCT
+            M.Bicicleta_Alquiler_Nro_Serie_Bici_Alquiler,
+            M.Modelo_Bicicleta_Modelo_Bicicleta,
+            E.id_estado_bicicleta_alquiler,
+            M.Bicicleta_Alquiler_Precio_Bici_Alquiler_Hora,
+            M.Bicicleta_Alquiler_Precio_Bici_Alquiler_Dia,
+            L.id_local
         FROM gd_esquema.Maestra M
-            LEFT JOIN SOMOS_QUATRO_LOCOS.Estado_Bicicleta_Alquiler E ON E.estado_bicicleta_alquiler = M.Estado_Bici_Alquiler_Estado_Bici_Alquiler
-            LEFT JOIN SOMOS_QUATRO_LOCOS.Local L ON L.nombre_local = M.Local_Nombre_Local
+        LEFT JOIN SOMOS_QUATRO_LOCOS.Estado_Bicicleta_Alquiler E
+               ON E.estado_bicicleta_alquiler = M.Estado_Bici_Alquiler_Estado_Bici_Alquiler
+        LEFT JOIN SOMOS_QUATRO_LOCOS.Local L
+               ON L.nombre_local = M.Local_Nombre_Local
         WHERE M.Bicicleta_Alquiler_Nro_Serie_Bici_Alquiler IS NOT NULL
-            AND M.Bicicleta_Alquiler_Precio_Bici_Alquiler_Hora IS NOT NULL
-            AND M.Bicicleta_Alquiler_Precio_Bici_Alquiler_Dia IS NOT NULL
-            /*AND M.Local_Nombre_Local IS NOT NULL
-            AND M.Estado_Bicicleta_Alquiler_Estado_Bicicleta_Alquiler IS NOT NULL*/
-END;    
+END;   
 
 GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.Migrar_Empleado
 AS BEGIN
     INSERT INTO SOMOS_QUATRO_LOCOS.Empleado (nombre_empleado, apellido_empleado, dni_empleado, puesto_empleado, fecha_ingreso_empleado, telefono_empleado, email_empleado, domicilio_empleado, fecha_nac_empleado, id_localidad)
-        SELECT DISTINCT M.Empleado_Nombre_Empleado AS nombre_empleado,
-                M.Empleado_Apellido_Empleado AS apellido_empleado,
-                M.Empleado_Dni_Empleado AS dni_empleado,
-                M.Empleado_Puesto_Empleado AS puesto_empleado,
-                M.Empleado_Fecha_Ingreso_Empleado AS fecha_ingreso_empleado,
-                M.Empleado_Telefono_Empleado AS telefono_empleado,
-                M.Empleado_Email_Empleado AS email_empleado,
-                M.Empleado_Domicilio_Empleado AS domicilio_empleado,
-                M.Empleado_Fecha_Nac_Empleado AS fecha_nac_empleado,
-                D.id_localidad 
+        SELECT DISTINCT
+            M.Empleado_Nombre_Empleado,
+            M.Empleado_Apellido_Empleado,
+            M.Empleado_Dni_Empleado,
+            M.Empleado_Puesto_Empleado,
+            M.Empleado_Fecha_Ingreso_Empleado,
+            M.Empleado_Telefono_Empleado,
+            M.Empleado_Email_Empleado,
+            M.Empleado_Domicilio_Empleado,
+            M.Empleado_Fecha_Nac_Empleado,
+            D.id_localidad
         FROM gd_esquema.Maestra M
-            JOIN SOMOS_QUATRO_LOCOS.Localidad D ON D.localidad = M.Empleado_Localidad 
-            JOIN SOMOS_QUATRO_LOCOS.Provincia P ON D.id_provincia = P.id_provincia AND P.provincia = Empleado_Provincia
+        LEFT JOIN SOMOS_QUATRO_LOCOS.Provincia P ON P.provincia = M.Empleado_Provincia
+        LEFT JOIN SOMOS_QUATRO_LOCOS.Localidad D ON D.localidad = M.Empleado_Localidad AND D.id_provincia = P.id_provincia
         WHERE M.Empleado_Dni_Empleado IS NOT NULL
-END;   
+END;
 
 /*falta testear bien*/
 GO 
@@ -683,8 +696,13 @@ AS BEGIN
         L.id_local
     FROM gd_esquema.Maestra M 
     LEFT JOIN SOMOS_QUATRO_LOCOS.Empleado E ON E.dni_empleado = M.Empleado_Dni_Empleado
-    LEFT JOIN SOMOS_QUATRO_LOCOS.Cliente C ON C.dni_cliente = M.Cliente_DNI_Cliente
-    LEFT JOIN SOMOS_QUATRO_LOCOS.Forma_Pago FP ON FP.forma_pago = M.Forma_Pago_Forma_Pago
+    LEFT JOIN SOMOS_QUATRO_LOCOS.Cliente C
+           ON C.dni_cliente = M.Cliente_Dni_Cliente
+          AND EXISTS (SELECT C.nombre_cliente, C.apellido_cliente, C.telefono_cliente,
+                             C.email_cliente, C.direccion_cliente, C.fecha_nacimiento_cliente
+                      INTERSECT
+                      SELECT M.Cliente_Nombre_Cliente, M.Cliente_Apellido_Cliente, M.Cliente_Telefono_Cliente,
+                             M.Cliente_Email_Cliente, M.Cliente_Direccion_Cliente, M.Cliente_Fecha_Nacimiento_Cliente)    LEFT JOIN SOMOS_QUATRO_LOCOS.Forma_Pago FP ON FP.forma_pago = M.Forma_Pago_Forma_Pago
     LEFT JOIN SOMOS_QUATRO_LOCOS.LOCAL L ON L.nombre_local = M.Local_Nombre_Local
     WHERE Venta_Nro_Venta IS NOT NULL AND Venta_Fecha_Hora_Venta IS NOT NULL AND Venta_Total_Venta IS NOT NULL
 END;
@@ -693,68 +711,82 @@ GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.Migrar_DetalleVenta
 AS BEGIN
     INSERT INTO SOMOS_QUATRO_LOCOS.Detalle_Venta (nro_venta, cod_producto, cantidad_prod_venta, precio_unitario_prod_venta, subtotal_prod_venta)
-        SELECT DISTINCT
-            M.Venta_Nro_Venta AS nro_venta,
-            M.Producto_Cod_Producto AS cod_producto,
-            M.Detalle_Venta_Cantidad_Prod_Venta AS cantidad_prod_venta,
-            M.Detalle_Venta_Precio_Unitario_Prod_Venta AS precio_unitario_prod_venta,
-            M.Detalle_Venta_Subtotal_Prod_Venta AS subtotal_prod_venta
+        SELECT
+            M.Venta_Nro_Venta,
+            M.Producto_Cod_Producto,
+            M.Detalle_Venta_Cantidad_Prod_Venta,
+            M.Detalle_Venta_Precio_Unitario_Prod_Venta,
+            M.Detalle_Venta_Subtotal_Prod_Venta
         FROM gd_esquema.Maestra M
         WHERE M.Venta_Nro_Venta IS NOT NULL AND M.Producto_Cod_Producto IS NOT NULL
 END;
 
 /*falta testear bien*/
-GO 
+
+GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.Migrar_Alquiler
 AS BEGIN
-    INSERT INTO SOMOS_QUATRO_LOCOS.Alquiler (nro_empleado, nro_cliente, id_forma_pago, id_estado, nro_serie_bicicleta, fecha_fin_pactada_alquiler, fecha_devolucion_real_alquiler, fecha_inicio_alquiler, importe_total_alquiler, id_local)
-        SELECT DISTINCT 
+    INSERT INTO SOMOS_QUATRO_LOCOS.Alquiler (nro_alquiler, nro_empleado, nro_cliente, id_forma_pago, id_estado, nro_serie_bicicleta, fecha_fin_pactada_alquiler, fecha_devolucion_real_alquiler, fecha_inicio_alquiler, importe_total_alquiler, id_local)
+        SELECT DISTINCT
+            M.Alquiler_Nro_Alquiler,
             E.nro_empleado,
             C.nro_cliente,
             FP.id_forma_pago,
             EA.id_estado_alquiler,
             B.nro_serie_bicicleta,
-            Alquiler_Fecha_Fin_Pactada_Alquiler AS fecha_fin_pactada_alquiler,
-            Alquiler_Fecha_Devolucion_Real_Alquiler AS fecha_devolucion_real_alquiler,
-            Alquiler_Fecha_Inicio_Alquiler AS fecha_inicio_alquiler,
-            Alquiler_Importe_Total_Alquiler AS importe_total_alquiler,
+            M.Alquiler_Fecha_Fin_Pactada_Alquiler,
+            M.Alquiler_Fecha_Devolucion_Real_Alquiler,
+            M.Alquiler_Fecha_Inicio_Alquiler,
+            M.Alquiler_Importe_Total_Alquiler,
             L.id_local
         FROM gd_esquema.Maestra M
         LEFT JOIN SOMOS_QUATRO_LOCOS.Empleado E ON E.dni_empleado = M.Empleado_Dni_Empleado
-        LEFT JOIN SOMOS_QUATRO_LOCOS.Cliente C ON C.dni_cliente = M.Cliente_Dni_Cliente
+        LEFT JOIN SOMOS_QUATRO_LOCOS.Cliente C
+               ON C.dni_cliente = M.Cliente_Dni_Cliente
+              AND EXISTS (SELECT C.nombre_cliente, C.apellido_cliente, C.telefono_cliente,
+                                 C.email_cliente, C.direccion_cliente, C.fecha_nacimiento_cliente
+                          INTERSECT
+                          SELECT M.Cliente_Nombre_Cliente, M.Cliente_Apellido_Cliente, M.Cliente_Telefono_Cliente,
+                                 M.Cliente_Email_Cliente, M.Cliente_Direccion_Cliente, M.Cliente_Fecha_Nacimiento_Cliente)
         LEFT JOIN SOMOS_QUATRO_LOCOS.Forma_Pago FP ON FP.forma_pago = M.Forma_Pago_Forma_Pago
         LEFT JOIN SOMOS_QUATRO_LOCOS.Estado_Alquiler EA ON EA.estado_alquiler = M.Estado_Alquiler_Estado_Alquiler
-        LEFT JOIN SOMOS_QUATRO_LOCOS.Bicicleta B ON B.nro_serie_bicicleta = M.Bicicleta_Alquiler_Nro_Serie_Bici_Alquiler
+        LEFT JOIN SOMOS_QUATRO_LOCOS.Bicicleta_Alquiler B ON B.nro_serie_bicicleta = M.Bicicleta_Alquiler_Nro_Serie_Bici_Alquiler
         LEFT JOIN SOMOS_QUATRO_LOCOS.Local L ON L.nombre_local = M.Local_Nombre_Local
-        WHERE Alquiler_Fecha_Inicio_Alquiler IS NOT NULL
-
-END
+        WHERE M.Alquiler_Nro_Alquiler IS NOT NULL
+END;
 
 GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.Migrar_Reparacion
 AS BEGIN
-    INSERT INTO SOMOS_QUATRO_LOCOS.Reparacion (nro_empleado, nro_cliente, nro_serie_bicicleta, fecha_ingreso_reparacion, fecha_entrega_estimada_reparacion, fecha_entrega_real_reparacion, id_local, precio_mano_obra_reparacion, precio_repuestos_reparacion, precio_total_reparacion, id_estado, diagnostico_reparacion)
-        SELECT DISTINCT 
+    INSERT INTO SOMOS_QUATRO_LOCOS.Reparacion (nro_reparacion, nro_empleado, nro_cliente, nro_serie_bici_reparacion, modelo_bicicleta, fecha_ingreso_reparacion, fecha_entrega_estimada_reparacion, fecha_entrega_real_reparacion, id_local, precio_mano_obra_reparacion, precio_repuestos_reparacion, precio_total_reparacion, id_estado, diagnostico_reparacion)
+        SELECT DISTINCT
+            M.Reparacion_Nro_Reparacion,
             E.nro_empleado,
             C.nro_cliente,
-            Bicicleta_Alquiler_Nro_Serie_Bici_Alquiler,
-            Reparacion_Fecha_Ingreso_Reparacion AS fecha_ingreso_reparacion,
-            Reparacion_Fecha_Entrega_Estimada_Reparacion AS fecha_entrega_estimada_reparacion,
-            Reparacion_Fecha_Entrega_Real_Reparacion AS fecha_entrega_real_reparacion,
+            M.Reparacion_Numero_Serie_Bici_Reparacion,
+            M.Modelo_Bicicleta_Modelo_Bicicleta,
+            M.Reparacion_Fecha_Ingreso_Reparacion,
+            M.Reparacion_Fecha_Entrega_Estimada_Reparacion,
+            M.Reparacion_Fecha_Entrega_Real_Reparacion,
             L.id_local,
-            Reparacion_Precio_Mano_Obra_Reparacion AS precio_mano_obra_reparacion,
-            Reparacion_Precio_Repuestos_Reparacion AS precio_repuestos_reparacion,
-            Reparacion_Precio_Total_Reparacion AS precio_total_reparacion,
+            M.Reparacion_Precio_Mano_Obra_Reparacion,
+            M.Reparacion_Precio_Repuestos_Reparacion,
+            M.Reparacion_Precio_Total_Reparacion,
             ER.id_estado_reparacion,
-            Reparacion_Diagnostico_Reparacion AS diagnostico_reparacion
+            M.Reparacion_Diagnostico_Reparacion
         FROM gd_esquema.Maestra M
         LEFT JOIN SOMOS_QUATRO_LOCOS.Empleado E ON E.dni_empleado = M.Empleado_Dni_Empleado
-        LEFT JOIN SOMOS_QUATRO_LOCOS.Cliente C ON C.dni_cliente = M.Cliente_Dni_Cliente
+        LEFT JOIN SOMOS_QUATRO_LOCOS.Cliente C
+               ON C.dni_cliente = M.Cliente_Dni_Cliente
+              AND EXISTS (SELECT C.nombre_cliente, C.apellido_cliente, C.telefono_cliente,
+                                 C.email_cliente, C.direccion_cliente, C.fecha_nacimiento_cliente
+                          INTERSECT
+                          SELECT M.Cliente_Nombre_Cliente, M.Cliente_Apellido_Cliente, M.Cliente_Telefono_Cliente,
+                                 M.Cliente_Email_Cliente, M.Cliente_Direccion_Cliente, M.Cliente_Fecha_Nacimiento_Cliente)    LEFT JOIN SOMOS_QUATRO_LOCOS.Forma_Pago FP ON FP.forma_pago = M.Forma_Pago_Forma_Pago
         LEFT JOIN SOMOS_QUATRO_LOCOS.Local L ON L.nombre_local = M.Local_Nombre_Local
         LEFT JOIN SOMOS_QUATRO_LOCOS.Estado_Reparacion ER ON ER.estado_reparacion = M.Estado_Reparacion_Estado_Reparacion
-        WHERE Reparacion_Fecha_Ingreso_Reparacion IS NOT NULL
+        WHERE M.Reparacion_Nro_Reparacion IS NOT NULL
 END;
-
 GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.Migrar_CategoriaRepuesto
 AS BEGIN
@@ -779,21 +811,19 @@ AS BEGIN
         WHERE Repuesto_Cod_Repuesto IS NOT NULL
 END;
 
-/*al parecer hay repetidos (una reparacion en la que se compro un mismo producto 1 y 3 veces; hay que agrupar*/
 GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.Migrar_DetalleReparacion
 AS BEGIN
     INSERT INTO SOMOS_QUATRO_LOCOS.Detalle_Reparacion (cod_repuesto, nro_reparacion, cantidad_repuesto, precio_unitario_repuesto, subtotal_repuesto)
-        SELECT DISTINCT 
-            M.Repuesto_Cod_Repuesto AS cod_repuesto,
-            R.nro_reparacion,
-            M.Detalle_Reparacion_Cantidad_Repuesto AS cantidad_repuesto,
-            M.Detalle_Reparacion_Precio_Unitario_Repuesto AS precio_unitario_repuesto,
-            M.Detalle_Reparacion_Subtotal_Repuesto AS subtotal_repuesto
+        SELECT
+            M.Repuesto_Cod_Repuesto,
+            M.Reparacion_Nro_Reparacion,
+            M.Detalle_Reparacion_Cantidad_Repuesto,
+            M.Detalle_Reparacion_Precio_Unitario_Repuesto,
+            M.Detalle_Reparacion_Subtotal_Repuesto
         FROM gd_esquema.Maestra M
-        LEFT JOIN SOMOS_QUATRO_LOCOS.Reparacion R ON R.nro_reparacion = M.Reparacion_Nro_Reparacion
-        LEFT JOIN SOMOS_QUATRO_LOCOS.Repuesto DR ON DR.cod_repuesto = M.Repuesto_Cod_Repuesto
-        WHERE DR.Repuesto_Cod_Repuesto IS NOT NULL AND R.nro_reparacion IS NOT NULL
+        WHERE M.Repuesto_Cod_Repuesto IS NOT NULL
+          AND M.Reparacion_Nro_Reparacion IS NOT NULL
 END;
 
 GO 
@@ -847,3 +877,38 @@ AS BEGIN
         FROM gd_esquema.Maestra M
         WHERE M.Compra_Nro_Compra IS NOT NULL AND M.Producto_Cod_Producto IS NOT NULL
 END; 
+
+
+
+
+
+
+GO
+EXEC SOMOS_QUATRO_LOCOS.Migrar_Provincia;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_Localidad;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_Marca;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_EstadoReparacion;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_EstadoAlquiler;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_CategoriaAccesorio;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_CategoriaBicicleta;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_TipoProducto;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_ModeloBicicleta;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_Producto;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_Accesorio;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_BicicletaVenta;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_Cliente;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_FormaPago;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_Local;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_EstadoBicicletaAlquiler;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_BicicletaAlquiler;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_Empleado;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_Venta;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_DetalleVenta;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_Alquiler;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_CategoriaRepuesto;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_Repuesto;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_Reparacion;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_DetalleReparacion;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_Proveedor;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_Compra;
+EXEC SOMOS_QUATRO_LOCOS.Migrar_DetalleCompra;
