@@ -712,13 +712,14 @@ CREATE PROCEDURE SOMOS_QUATRO_LOCOS.Migrar_DetalleVenta
 AS BEGIN
     INSERT INTO SOMOS_QUATRO_LOCOS.Detalle_Venta (nro_venta, cod_producto, cantidad_prod_venta, precio_unitario_prod_venta, subtotal_prod_venta)
         SELECT
-            M.Venta_Nro_Venta,
-            M.Producto_Cod_Producto,
-            M.Detalle_Venta_Cantidad_Prod_Venta,
-            M.Detalle_Venta_Precio_Unitario_Prod_Venta,
-            M.Detalle_Venta_Subtotal_Prod_Venta
-        FROM gd_esquema.Maestra M
+            Venta_Nro_Venta AS nro_venta,
+            Producto_Cod_Producto AS cod_producto,
+            SUM(M.Detalle_Venta_Cantidad_Prod_Venta) AS cantidad_prod_venta,
+            Detalle_Venta_Precio_Unitario_Prod_Venta AS precio_unitario_prod_venta,
+            SUM(M.Detalle_Venta_Subtotal_Prod_Venta) AS subtotal_prod_venta
+        FROM gd_esquema.Maestra
         WHERE M.Venta_Nro_Venta IS NOT NULL AND M.Producto_Cod_Producto IS NOT NULL
+        GROUP BY M.Venta_Nro_Venta, M.Producto_Cod_Producto, M.Detalle_Venta_Precio_Unitario_Prod_Venta
 END;
 
 /*falta testear bien*/
@@ -816,14 +817,14 @@ CREATE PROCEDURE SOMOS_QUATRO_LOCOS.Migrar_DetalleReparacion
 AS BEGIN
     INSERT INTO SOMOS_QUATRO_LOCOS.Detalle_Reparacion (cod_repuesto, nro_reparacion, cantidad_repuesto, precio_unitario_repuesto, subtotal_repuesto)
         SELECT
-            M.Repuesto_Cod_Repuesto,
-            M.Reparacion_Nro_Reparacion,
-            M.Detalle_Reparacion_Cantidad_Repuesto,
-            M.Detalle_Reparacion_Precio_Unitario_Repuesto,
-            M.Detalle_Reparacion_Subtotal_Repuesto
-        FROM gd_esquema.Maestra M
-        WHERE M.Repuesto_Cod_Repuesto IS NOT NULL
-          AND M.Reparacion_Nro_Reparacion IS NOT NULL
+            Reparacion_Nro_Reparacion AS nro_reparacion,
+            Repuesto_Cod_Repuesto AS cod_repuesto,
+            SUM(Detalle_Reparacion_Cantidad_Repuesto) AS cantidad_repuesto,
+            Detalle_Reparacion_Precio_Unitario_Repuesto AS precio_unitario_repuesto,
+            SUM(Detalle_Reparacion_Subtotal_Repuesto) AS subtotal_repuesto
+        FROM gd_esquema.Maestra
+        WHERE Repuesto_Cod_Repuesto IS NOT NULL AND Reparacion_Nro_Reparacion IS NOT NULL
+        GROUP BY Repuesto_Cod_Repuesto, Reparacion_Nro_Reparacion, Detalle_Reparacion_Precio_Unitario_Repuesto
 END;
 
 GO 
@@ -869,19 +870,14 @@ CREATE PROCEDURE SOMOS_QUATRO_LOCOS.Migrar_DetalleCompra
 AS BEGIN
     INSERT INTO SOMOS_QUATRO_LOCOS.Detalle_Compra (nro_compra, cod_producto, cantidad_prod_compra, precio_unitario_prod_compra, subtotal)
         SELECT DISTINCT 
-            M.Compra_Nro_Compra AS nro_compra,
-            M.Producto_Cod_Producto,
-            M.Detalle_Compra_Cantidad_Prod_Compra AS cantidad_prod_compra,
-            M.Detalle_Compra_Precio_Unitario_Prod_Compra AS precio_unitario_prod_compra,
-            M.Detalle_Compra_Precio_Unitario_Prod_Compra*M.Detalle_Compra_Cantidad_Prod_Compra AS subtotal
-        FROM gd_esquema.Maestra M
-        WHERE M.Compra_Nro_Compra IS NOT NULL AND M.Producto_Cod_Producto IS NOT NULL
+            Compra_Nro_Compra AS nro_compra,
+            Producto_Cod_Producto,
+            Detalle_Compra_Cantidad_Prod_Compra AS cantidad_prod_compra,
+            Detalle_Compra_Precio_Unitario_Prod_Compra AS precio_unitario_prod_compra,
+            Detalle_Compra_Precio_Unitario_Prod_Compra * Detalle_Compra_Cantidad_Prod_Compra AS subtotal
+        FROM gd_esquema.Maestra
+        WHERE Compra_Nro_Compra IS NOT NULL AND Producto_Cod_Producto IS NOT NULL
 END; 
-
-
-
-
-
 
 GO
 EXEC SOMOS_QUATRO_LOCOS.Migrar_Provincia;
