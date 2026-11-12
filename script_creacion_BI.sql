@@ -71,11 +71,18 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Rango_Etario (
     CONSTRAINT PK_BI_RangoEtario PRIMARY KEY (id_rango_etario)
 );
 
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'BI_Categoria_Bicicleta' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
+CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Categoria_Bicicleta (
+    id_categoria_bicicleta INT,
+    categoria_bicicleta VARCHAR(255) NOT NULL,
+ 
+    CONSTRAINT PK_BI_CategoriaBicicleta PRIMARY KEY (id_categoria_bicicleta)
+);
 
 
 
 
------ HECHOS -------
+------ HECHOS ------
 
 -- Hechos Ventas: una fila por tiempo + local + tipo de producto + rango etario
 -- Para los otros puntos seguro tenemos que ampliarlo
@@ -96,6 +103,22 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Hechos_Ventas (
 );
 
 
+---- ALQUILERES ----
+
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'BI_Hechos_Alquileres' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
+CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Hechos_Alquileres (
+    id_tiempo INT,
+    id_local INT,
+    id_categoria_bicicleta INT,
+    cantidad_alquileres INT,
+    cantidad_horas NUMERIC(10, 1),
+    monto_total NUMERIC(38, 2),
+ 
+    CONSTRAINT PK_BI_HechosAlquileres PRIMARY KEY (id_tiempo, id_local, id_categoria_bicicleta),
+    CONSTRAINT FK_BI_HechosAlquileres_Tiempo FOREIGN KEY (id_tiempo) REFERENCES SOMOS_QUATRO_LOCOS.BI_Tiempo (id_tiempo),
+    CONSTRAINT FK_BI_HechosAlquileres_Local FOREIGN KEY (id_local) REFERENCES SOMOS_QUATRO_LOCOS.BI_Local (id_local),
+    CONSTRAINT FK_BI_HechosAlquileres_CategoriaBicicleta FOREIGN KEY (id_categoria_bicicleta) REFERENCES SOMOS_QUATRO_LOCOS.BI_Categoria_Bicicleta (id_categoria_bicicleta)
+);
 
 
 
@@ -120,7 +143,6 @@ AS BEGIN
         WHERE F.fecha IS NOT NULL
 END;
 
--- copio los locales 
 GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.BI_Migrar_Local
 AS BEGIN
@@ -144,10 +166,16 @@ AS BEGIN
     VALUES (1, 'Menores de 25 o igual'), (2, 'Entre 26 y 35'), (3, 'Entre 36 y 50'), (4, 'Mayores de 50'), (5, 'Sin dato')
 END;
 
+GO
+CREATE PROCEDURE SOMOS_QUATRO_LOCOS.BI_Migrar_CategoriaBicicleta
+AS BEGIN
+    INSERT INTO SOMOS_QUATRO_LOCOS.BI_Categoria_Bicicleta (id_categoria_bicicleta, categoria_bicicleta)
+    SELECT id_categoria_bicicleta, categoria_bicicleta FROM SOMOS_QUATRO_LOCOS.categoria_bicicleta
+END;
 
--------- MIGRAR HECHOS
+-------- MIGRAR HECHOS --------
 
--- Indicador 1: facturacion total mensual en ventas de cada local
+-- Ventas --
 GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Ventas
 AS BEGIN
@@ -190,6 +218,20 @@ AS BEGIN
         GROUP BY T.id_tiempo, X.id_local, X.nro_tipo_producto, X.id_rango_etario
 END;
 
+-- Alquileres --
+GO
+CREATE PROCEDURE SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Alquileres
+AS BEGIN
+    INSERT INTO SOMOS_QUATRO_LOCOS.BI_Hechos_Alquileres (id_tiempo, id_local, id_categoria_bicicleta, cantidad_alquileres, cantidad_horas, monto_total)
+        SELECT T.id_tiempo, A.id_local, MB.id_categoria_bicicleta, COUNT(DISTINCT A.nro_alquiler) AS cantidad_alquileres, CAST(SUM(DATEDIFF(HOUR, A.fecha_inicio_alquiler, A.fecha_devolucion_real_alquiler)) AS NUMERIC(10,1)) AS cantidad_horas, SUM(A.importe_total_alquiler)
+        FROM SOMOS_QUATRO_LOCOS.Alquiler A
+            LEFT JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.anio = YEAR(A.fecha_inicio_alquiler) AND T.mes = MONTH(A.fecha_inicio_alquiler)
+            LEFT JOIN SOMOS_QUATRO_LOCOS.Bicicleta_Alquiler BA ON BA.nro_serie_bicicleta = A.nro_serie_bicicleta
+            JOIN SOMOS_QUATRO_LOCOS.Modelo_Bicicleta MB ON MB.modelo_bicicleta = BA.modelo_bicicleta
+        GROUP BY T.id_tiempo, A.id_local, MB.id_categoria_bicicleta
+        ORDER BY 1, 2, 3
+END;
+
 -------- VISTAS ----------
 
 GO
@@ -218,10 +260,42 @@ AS
     GROUP BY T.anio, T.mes, TP.nro_tipo_producto, TP.tipo_producto, RE.id_rango_etario, RE.descripcion;
 GO
 
+-- Indicador 3: Porcentaje de ventas trimestrales según tipo de producto (bicicletas o accesorios) por local
+CREATE VIEW SOMOS_QUATRO_LOCOS.BI_Vista_Porcentaje_Ventas_Trimestrales
+AS
+    SELECT 
+        L.nombre_local, T.anio, T.trimestre, TP.tipo_producto,
+       CAST(100.0 * SUM(V.cantidad_ventas) / TV.total_ventas AS DECIMAL(5,2)) AS porcentaje
+    FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Ventas V
+        JOIN SOMOS_QUATRO_LOCOS.BI_Local L ON L.id_local = V.id_local
+        JOIN SOMOS_QUATRO_LOCOS.BI_Tipo_Producto TP ON TP.nro_tipo_producto = V.nro_tipo_producto
+        JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.id_tiempo = V.id_tiempo
+        JOIN (
+        SELECT V.id_local, T.anio, T.trimestre, SUM(V.cantidad_ventas) AS total_ventas
+            FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Ventas V
+                JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.id_tiempo = V.id_tiempo
+        GROUP BY V.id_local, T.anio, T.trimestre
+        ) TV ON TV.id_local = L.id_local AND TV.anio = T.anio AND TV.trimestre = T.trimestre
+    GROUP BY L.id_local, L.nombre_local, T.anio, T.trimestre, TP.tipo_producto, TV.total_ventas
+    ORDER BY 1, 2, 3, 4
+GO
+
+-- Indicador 4: Promedio de cantidad de horas de alquiler de bicicletas, por local y mes
+CREATE VIEW SOMOS_QUATRO_LOCOS.BI_Cant_Horas_Alquiler_Bicicleta
+AS
+    SELECT L.nombre_local, T.anio, T.mes, CAST(AVG(HA.cantidad_horas) AS NUMERIC(20,2)) AS promedio_horas
+    FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Alquileres HA
+        JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.id_tiempo = HA.id_tiempo
+        JOIN SOMOS_QUATRO_LOCOS.BI_Local L ON L.id_local = HA.id_local
+    GROUP BY L.id_local, L.nombre_local, T.anio, T.mes
+GO
+
 ---- EXECUTE -----
 GO
 EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_Tiempo;
 EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_Local;
 EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_TipoProducto;
 EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_RangoEtario;
+EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_CategoriaBicicleta;
 EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Ventas;
+EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Alquileres;
