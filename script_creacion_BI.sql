@@ -111,9 +111,10 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Hechos_Alquileres (
     id_local INT,
     id_categoria_bicicleta INT,
     cantidad_alquileres INT,
-    cantidad_horas NUMERIC(10, 1),
+    cantidad_alquileres_devueltos INT,
+    cantidad_horas NUMERIC(18, 2),
     monto_total NUMERIC(38, 2),
- 
+
     CONSTRAINT PK_BI_HechosAlquileres PRIMARY KEY (id_tiempo, id_local, id_categoria_bicicleta),
     CONSTRAINT FK_BI_HechosAlquileres_Tiempo FOREIGN KEY (id_tiempo) REFERENCES SOMOS_QUATRO_LOCOS.BI_Tiempo (id_tiempo),
     CONSTRAINT FK_BI_HechosAlquileres_Local FOREIGN KEY (id_local) REFERENCES SOMOS_QUATRO_LOCOS.BI_Local (id_local),
@@ -139,6 +140,8 @@ AS BEGIN
         SELECT DISTINCT YEAR(F.fecha), DATEPART(QUARTER, F.fecha), MONTH(F.fecha)
         FROM (
             SELECT fecha_hora_venta AS fecha FROM SOMOS_QUATRO_LOCOS.Venta
+            UNION
+            SELECT fecha_inicio_alquiler FROM SOMOS_QUATRO_LOCOS.Alquiler
         ) AS F
         WHERE F.fecha IS NOT NULL
 END;
@@ -277,7 +280,7 @@ AS
         GROUP BY V.id_local, T.anio, T.trimestre
         ) TV ON TV.id_local = L.id_local AND TV.anio = T.anio AND TV.trimestre = T.trimestre
     GROUP BY L.id_local, L.nombre_local, T.anio, T.trimestre, TP.tipo_producto, TV.total_ventas
-    ORDER BY 1, 2, 3, 4
+    -- ORDER BY 1, 2, 3, 4 me parece que el orden se pone al consultar
 GO
 
 -- Indicador 4: Promedio de cantidad de horas de alquiler de bicicletas, por local y mes
@@ -290,6 +293,27 @@ AS
     GROUP BY L.id_local, L.nombre_local, T.anio, T.mes
 GO
 
+
+-- Indicador 5: Top 5 categorias de bicicleta mas alquiladas, por año
+CREATE VIEW SOMOS_QUATRO_LOCOS.BI_Vista_Top5_Categorias_Alquiladas
+AS
+    WITH Totales AS (
+        SELECT T.anio, CB.id_categoria_bicicleta, CB.categoria_bicicleta, SUM(HA.cantidad_alquileres) AS cantidad_alquileres
+        FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Alquileres HA
+            JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.id_tiempo = HA.id_tiempo
+            JOIN SOMOS_QUATRO_LOCOS.BI_Categoria_Bicicleta CB ON CB.id_categoria_bicicleta = HA.id_categoria_bicicleta
+        GROUP BY T.anio, CB.id_categoria_bicicleta, CB.categoria_bicicleta
+    )
+    SELECT R.anio, R.ranking, R.categoria_bicicleta, R.cantidad_alquileres
+    FROM (
+        SELECT A.anio, A.categoria_bicicleta, A.cantidad_alquileres,
+            (SELECT COUNT(*) FROM Totales B
+             WHERE B.anio = A.anio
+               AND (B.cantidad_alquileres > A.cantidad_alquileres OR (B.cantidad_alquileres = A.cantidad_alquileres
+                                                                        AND B.id_categoria_bicicleta < A.id_categoria_bicicleta))) + 1 AS ranking
+        FROM Totales A
+    ) R
+    WHERE R.ranking <= 5
 ---- EXECUTE -----
 GO
 EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_Tiempo;
