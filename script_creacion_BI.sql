@@ -98,7 +98,6 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Tipo_Ingreso_Reparacion (
 
 
 ------ HECHOS ------
-
 -- Hechos Ventas: una fila por tiempo + local + tipo de producto + rango etario
 -- Para los otros puntos seguro tenemos que ampliarlo
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'BI_Hechos_Ventas' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
@@ -119,7 +118,6 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Hechos_Ventas (
 
 
 ---- ALQUILERES ----
-
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'BI_Hechos_Alquileres' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Hechos_Alquileres (
     id_tiempo INT,
@@ -136,6 +134,31 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Hechos_Alquileres (
     CONSTRAINT FK_BI_HechosAlquileres_CategoriaBicicleta FOREIGN KEY (id_categoria_bicicleta) REFERENCES SOMOS_QUATRO_LOCOS.BI_Categoria_Bicicleta (id_categoria_bicicleta)
 );
 
+--- REPARACIONES ---
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'BI_Hechos_Reparaciones' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
+CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones (
+    id_tiempo INT,
+    id_local INT,
+    promedio_dias_diferencia_fecha_entega INT,
+
+    CONSTRAINT PK_BI_HechosReparaciones PRIMARY KEY (id_tiempo, id_local),
+    CONSTRAINT FK_BI_HechosReparaciones_Tiempo FOREIGN KEY (id_tiempo) REFERENCES SOMOS_QUATRO_LOCOS.BI_Tiempo,
+    CONSTRAINT FK_BI_HechosReparaciones_Local FOREIGN KEY (id_local) REFERENCES SOMOS_QUATRO_LOCOS.BI_Local (id_local)
+)
+-- lo separe en reparaciones_ingresos porque estaria conceptualmente mal hacer una unica tabla para todos los datos, dado que son de distinta granularidad
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'BI_Hechos_Reparaciones_Ingresos' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
+CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones_Ingresos (
+    id_tiempo INT,
+    id_local INT,
+    id_tipo_ingreso INT,
+    monto_total NUMERIC(38, 2),
+
+    CONSTRAINT PK_BI_HechosReparacionesIngresos PRIMARY KEY (id_tiempo, id_local, id_tipo_ingreso),
+    CONSTRAINT FK_BI_HechosReparacionesIngresos_Tiempo FOREIGN KEY (id_tiempo) REFERENCES SOMOS_QUATRO_LOCOS.BI_Tiempo (id_tiempo),
+    CONSTRAINT FK_BI_HechosReparacionesIngresos_Local FOREIGN KEY (id_local) REFERENCES SOMOS_QUATRO_LOCOS.BI_Local (id_local),
+    CONSTRAINT FK_BI_HechosReparacionesIngresos_TipoIngreso FOREIGN KEY (id_tipo_ingreso) REFERENCES SOMOS_QUATRO_LOCOS.BI_Tipo_Ingreso_Reparacion (id_tipo_ingreso)
+);
+
 ----- REPUESTOS -----
 -- Una fila por tiempo + local + categoría de repuesto
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'BI_Hechos_Repuestos' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
@@ -150,21 +173,6 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Hechos_Repuestos (
     CONSTRAINT FK_BI_HechosRepuestos_Tiempo FOREIGN KEY (id_tiempo) REFERENCES SOMOS_QUATRO_LOCOS.BI_Tiempo (id_tiempo),
     CONSTRAINT FK_BI_HechosRepuestos_Local FOREIGN KEY (id_local) REFERENCES SOMOS_QUATRO_LOCOS.BI_Local (id_local),
     CONSTRAINT FK_BI_HechosRepuestos_Categoria FOREIGN KEY (id_categoria_repuesto) REFERENCES SOMOS_QUATRO_LOCOS.BI_Categoria_Repuesto (id_categoria_repuesto)
-);
-
-
------ REPARACIONES -----
-IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'BI_Hechos_Reparaciones' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
-CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones (
-    id_tiempo INT,
-    id_local INT,
-    id_tipo_ingreso INT,
-    monto_total NUMERIC(38, 2),
-
-    CONSTRAINT PK_BI_HechosReparaciones PRIMARY KEY (id_tiempo, id_local, id_tipo_ingreso),
-    CONSTRAINT FK_BI_HechosReparaciones_Tiempo FOREIGN KEY (id_tiempo) REFERENCES SOMOS_QUATRO_LOCOS.BI_Tiempo (id_tiempo),
-    CONSTRAINT FK_BI_HechosReparaciones_Local FOREIGN KEY (id_local) REFERENCES SOMOS_QUATRO_LOCOS.BI_Local (id_local),
-    CONSTRAINT FK_BI_HechosReparaciones_TipoIngreso FOREIGN KEY (id_tipo_ingreso) REFERENCES SOMOS_QUATRO_LOCOS.BI_Tipo_Ingreso_Reparacion (id_tipo_ingreso)
 );
 
 ----- COMPRAS -----
@@ -184,14 +192,17 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Hechos_Compras (
 );
 
 
------- INDICES ---------
+------ INDICES --------- de tiempo no?
 CREATE NONCLUSTERED INDEX INX_BI_HechosVentas_Local ON SOMOS_QUATRO_LOCOS.BI_Hechos_Ventas (id_local);
 CREATE NONCLUSTERED INDEX INX_BI_HechosVentas_TipoProducto ON SOMOS_QUATRO_LOCOS.BI_Hechos_Ventas (nro_tipo_producto);
 CREATE NONCLUSTERED INDEX INX_BI_HechosVentas_RangoEtario ON SOMOS_QUATRO_LOCOS.BI_Hechos_Ventas (id_rango_etario);
+CREATE NONCLUSTERED INDEX INX_BI_HechosAlquileres_Local ON SOMOS_QUATRO_LOCOS.BI_Hechos_Alquileres (id_local);
+CREATE NONCLUSTERED INDEX INX_BI_HechosAlquileres_CategoriaBicicleta ON SOMOS_QUATRO_LOCOS.BI_Hechos_Alquileres (id_categoria_bicicleta);
+CREATE NONCLUSTERED INDEX INX_BI_HechosReparaciones_Local ON SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones (id_local);
 CREATE NONCLUSTERED INDEX INX_BI_HechosRepuestos_Local ON SOMOS_QUATRO_LOCOS.BI_Hechos_Repuestos (id_local);
 CREATE NONCLUSTERED INDEX INX_BI_HechosRepuestos_Categoria ON SOMOS_QUATRO_LOCOS.BI_Hechos_Repuestos (id_categoria_repuesto);
-CREATE NONCLUSTERED INDEX INX_BI_HechosReparaciones_Local ON SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones (id_local);
-CREATE NONCLUSTERED INDEX INX_BI_HechosReparaciones_TipoIngreso ON SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones (id_tipo_ingreso);
+CREATE NONCLUSTERED INDEX INX_BI_HechosReparacionesIngresos_Local ON SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones_Ingresos (id_local);
+CREATE NONCLUSTERED INDEX INX_BI_HechosReparacionesIngresos_TipoIngreso ON SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones_Ingresos (id_tipo_ingreso);
 CREATE NONCLUSTERED INDEX INX_BI_HechosCompras_Local ON SOMOS_QUATRO_LOCOS.BI_Hechos_Compras (id_local);
 CREATE NONCLUSTERED INDEX INX_BI_HechosCompras_TipoProducto ON SOMOS_QUATRO_LOCOS.BI_Hechos_Compras (nro_tipo_producto);
 
@@ -343,7 +354,19 @@ END;
 GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Reparaciones
 AS BEGIN
-    INSERT INTO SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones (id_tiempo, id_local, id_tipo_ingreso, monto_total)
+    INSERT INTO SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones (id_tiempo, id_local, promedio_dias_diferencia_fecha_entega)
+    SELECT 
+        id_local, T.id_tiempo, 
+        AVG(1.0 * DATEDIFF(DAY, R.fecha_entrega_estimada_reparacion, R.fecha_entrega_real_reparacion)) AS promedio_dias_diferencia_fecha_entega
+    FROM SOMOS_QUATRO_LOCOS.Reparacion R 
+        LEFT JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.anio = YEAR(R.fecha_ingreso_reparacion) AND T.mes = MONTH(R.fecha_ingreso_reparacion)
+    GROUP BY id_local, id_tiempo
+END;
+
+GO
+CREATE PROCEDURE SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Reparaciones_Ingresos
+AS BEGIN
+    INSERT INTO SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones_Ingresos (id_tiempo, id_local, id_tipo_ingreso, monto_total)
         SELECT T.id_tiempo, R.id_local, X.id_tipo_ingreso, SUM(X.monto)
         FROM SOMOS_QUATRO_LOCOS.Reparacion R
             JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.anio = YEAR(R.fecha_ingreso_reparacion)
@@ -454,9 +477,18 @@ AS
         FROM Totales A
     ) R
     WHERE R.ranking <= 5
+GO
+
+-- Indicador 6. Desvío promedio de reparaciones (en días), entre fecha de entrega estimada y real, por local y trimestre
+CREATE VIEW SOMOS_QUATRO_LOCOS.BI_Vista_Promedio_Desvio_Reparaciones
+AS
+    SELECT id_local, T.anio, T.trimestre, AVG(R.promedio_dias_diferencia_fecha_entega) AS promedio_dias_diferencia_fecha_entega
+    FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones R
+        JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.id_tiempo = R.id_tiempo
+    GROUP BY id_local, T.anio, T.trimestre
+GO
 
 -- Indicador 7: Ranking de categoría de repuestos más utilizados por mes.
-GO
 CREATE VIEW SOMOS_QUATRO_LOCOS.BI_Vista_Ranking_Categorias_Repuestos_Mensual
 AS
     WITH Totales AS (
@@ -482,12 +514,12 @@ AS
     SELECT
         T.anio, T.trimestre, TI.descripcion AS tipo_ingreso,
         CAST(100.0 * SUM(H.monto_total) / NULLIF(TT.total_trimestre, 0) AS DECIMAL(5,2)) AS porcentaje
-    FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones H
+    FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones_Ingresos H
         JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.id_tiempo = H.id_tiempo
         JOIN SOMOS_QUATRO_LOCOS.BI_Tipo_Ingreso_Reparacion TI ON TI.id_tipo_ingreso = H.id_tipo_ingreso
         JOIN (
             SELECT T2.anio, T2.trimestre, SUM(H2.monto_total) AS total_trimestre
-            FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones H2
+            FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones_Ingresos H2
                 JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T2 ON T2.id_tiempo = H2.id_tiempo
             GROUP BY T2.anio, T2.trimestre
         ) TT ON TT.anio = T.anio AND TT.trimestre = T.trimestre
@@ -513,8 +545,9 @@ EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_RangoEtario;
 EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_CategoriaBicicleta;
 EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Ventas;
 EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Alquileres;
+EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Reparaciones;
 EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_CategoriaRepuesto;
 EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Repuestos;
 EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_TipoIngresoReparacion;
-EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Reparaciones;
+EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Reparaciones_Ingresos;
 EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Compras;
