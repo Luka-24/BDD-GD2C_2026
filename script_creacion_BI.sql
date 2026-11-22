@@ -1,38 +1,7 @@
 USE [GD2C_2026]
 GO
-/*
- ------1. Facturación total mensual en ventas de cada local
-
-2. Ticket promedio ($) de venta mensual por tipo de producto (bicicletas o
-accesorios) y rango etario del cliente.
-
-3. Porcentaje de ventas trimestrales según tipo de producto (bicicletas o accesorios)
-por local.
-
-4. Promedio de cantidad de horas de alquiler de bicicletas, por local y mes
-
-5. Top 5 categorías de bicicleta más alquilados, por año
-
-6. Desvío promedio de reparaciones (en días), entre fecha de entrega estimada y
-real, por local y trimestre.
-
-7. Ranking de categoría de repuestos más utilizados por mes.
-
-8. Porcentaje de facturación de reparaciones según el tipo de ingreso de reparación
-(mano de obra o repuestos) por trimestre
-
-9. Promedio de unidades (cantidad) compradas según el tipo de producto
-(bicicletas o accesorios) por trimestre.
-
-10. Importe total de compras mensuales por local.
-
-11. Facturación mensual del negocio (ventas + alquileres + reparaciones) por local.*/
-
--- PUNTO 1: Facturación total mensual en ventas de cada local
-
 
 ------ DIMENSIONES --------
-
 
 -- Dimension Tiempo: una fila por anio-mes
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'BI_Tiempo' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
@@ -66,7 +35,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Tipo_Producto (
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'BI_Rango_Etario' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Rango_Etario (
     id_rango_etario INT,
-    descripcion VARCHAR(255) NOT NULL,
+    rango_etario VARCHAR(255) NOT NULL,
  
     CONSTRAINT PK_BI_RangoEtario PRIMARY KEY (id_rango_etario)
 );
@@ -90,7 +59,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Categoria_Repuesto (
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'BI_Tipo_Ingreso_Reparacion' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Tipo_Ingreso_Reparacion (
     id_tipo_ingreso INT,
-    descripcion VARCHAR(255) NOT NULL,
+    tipo_ingreso_reparacion VARCHAR(255) NOT NULL,
 
     CONSTRAINT PK_BI_TipoIngresoReparacion PRIMARY KEY (id_tipo_ingreso)
 );
@@ -124,7 +93,7 @@ CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Hechos_Alquileres (
     id_local INT,
     id_categoria_bicicleta INT,
     cantidad_alquileres INT,
-    cantidad_alquileres_devueltos INT,
+    cantidad_alquileres_devueltos INT,  
     cantidad_horas NUMERIC(18, 2),
     monto_total NUMERIC(38, 2),
 
@@ -246,7 +215,7 @@ END;
 GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.BI_Migrar_RangoEtario
 AS BEGIN
-    INSERT INTO SOMOS_QUATRO_LOCOS.BI_Rango_Etario (id_rango_etario, descripcion)
+    INSERT INTO SOMOS_QUATRO_LOCOS.BI_Rango_Etario (id_rango_etario, rango_etario)
     VALUES (1, 'Menores de 25 o igual'), (2, 'Entre 26 y 35'), (3, 'Entre 36 y 50'), (4, 'Mayores de 50'), (5, 'Sin dato')
 END;
 
@@ -271,7 +240,7 @@ GO
 GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.BI_Migrar_TipoIngresoReparacion
 AS BEGIN
-    INSERT INTO SOMOS_QUATRO_LOCOS.BI_Tipo_Ingreso_Reparacion (id_tipo_ingreso, descripcion)
+    INSERT INTO SOMOS_QUATRO_LOCOS.BI_Tipo_Ingreso_Reparacion (id_tipo_ingreso, tipo_ingreso_reparacion)
     VALUES (1, 'Mano de obra'), (2, 'Repuestos')
 END;
 
@@ -435,13 +404,13 @@ GO
 CREATE VIEW SOMOS_QUATRO_LOCOS.BI_Vista_Ticket_Promedio_Mensual
 AS
     SELECT
-        T.anio, T.mes, TP.tipo_producto, RE.descripcion AS rango_etario,
+        T.anio, T.mes, TP.tipo_producto, RE.rango_etario AS rango_etario,
         CAST(SUM(H.monto_total) / NULLIF(SUM(H.cantidad_ventas), 0) AS NUMERIC(38, 2)) AS ticket_promedio
     FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Ventas H
     JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.id_tiempo = H.id_tiempo
     JOIN SOMOS_QUATRO_LOCOS.BI_Tipo_Producto TP ON TP.nro_tipo_producto = H.nro_tipo_producto
     JOIN SOMOS_QUATRO_LOCOS.BI_Rango_Etario RE ON RE.id_rango_etario = H.id_rango_etario
-    GROUP BY T.anio, T.mes, TP.nro_tipo_producto, TP.tipo_producto, RE.id_rango_etario, RE.descripcion;
+    GROUP BY T.anio, T.mes, TP.nro_tipo_producto, TP.tipo_producto, RE.id_rango_etario, RE.rango_etario;
 GO
 
 -- Indicador 3: Porcentaje de ventas trimestrales según tipo de producto (bicicletas o accesorios) por local
@@ -533,7 +502,7 @@ GO
 CREATE VIEW SOMOS_QUATRO_LOCOS.BI_Vista_Porcentaje_Facturacion_Reparaciones
 AS
     SELECT
-        T.anio, T.trimestre, TI.descripcion AS tipo_ingreso,
+        T.anio, T.trimestre, TI.tipo_ingreso_reparacion AS tipo_ingreso,
         CAST(100.0 * SUM(H.monto_total) / NULLIF(TT.total_trimestre, 0) AS DECIMAL(5,2)) AS porcentaje
     FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones_Ingresos H
         JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.id_tiempo = H.id_tiempo
@@ -544,8 +513,9 @@ AS
                 JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T2 ON T2.id_tiempo = H2.id_tiempo
             GROUP BY T2.anio, T2.trimestre
         ) TT ON TT.anio = T.anio AND TT.trimestre = T.trimestre
-    GROUP BY T.anio, T.trimestre, TI.id_tipo_ingreso, TI.descripcion, TT.total_trimestre
+    GROUP BY T.anio, T.trimestre, TI.id_tipo_ingreso, TI.tipo_ingreso_reparacion, TT.total_trimestre
 GO
+
 -- Indicador 9: Promedio de unidades (cantidad) compradas según el tipo de producto (bicicletas o accesorios) por trimestre
 CREATE VIEW SOMOS_QUATRO_LOCOS.BI_Vista_Promedio_Unidades_Compradas_Trimestral
 AS
@@ -590,6 +560,7 @@ AS
         JOIN SOMOS_QUATRO_LOCOS.BI_Local L ON L.id_local = F.id_local
     GROUP BY T.anio, T.mes, L.id_local, L.nombre_local
 GO
+
 ---- EXECUTE -----
 GO
 EXEC SOMOS_QUATRO_LOCOS.BI_Migrar_Tiempo;
