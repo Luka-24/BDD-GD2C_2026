@@ -139,12 +139,13 @@ IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'BI_Hechos_Reparaciones' AN
 CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones (
     id_tiempo INT,
     id_local INT,
-    promedio_dias_diferencia_fecha_entega INT,
+    cantidad_reparaciones_entregadas INT,
+    suma_dias_desvio INT,
 
     CONSTRAINT PK_BI_HechosReparaciones PRIMARY KEY (id_tiempo, id_local),
-    CONSTRAINT FK_BI_HechosReparaciones_Tiempo FOREIGN KEY (id_tiempo) REFERENCES SOMOS_QUATRO_LOCOS.BI_Tiempo,
+    CONSTRAINT FK_BI_HechosReparaciones_Tiempo FOREIGN KEY (id_tiempo) REFERENCES SOMOS_QUATRO_LOCOS.BI_Tiempo (id_tiempo),
     CONSTRAINT FK_BI_HechosReparaciones_Local FOREIGN KEY (id_local) REFERENCES SOMOS_QUATRO_LOCOS.BI_Local (id_local)
-)
+);
 -- lo separe en reparaciones_ingresos porque estaria conceptualmente mal hacer una unica tabla para todos los datos, dado que son de distinta granularidad
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'BI_Hechos_Reparaciones_Ingresos' AND schema_id = SCHEMA_ID('SOMOS_QUATRO_LOCOS'))
 CREATE TABLE SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones_Ingresos (
@@ -321,18 +322,30 @@ END;
 
 -- Alquileres --
 GO
+-- Carga hechos de alquileres: horas reales (en minutos/60) solo de alquileres devueltos
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Alquileres
 AS BEGIN
-    INSERT INTO SOMOS_QUATRO_LOCOS.BI_Hechos_Alquileres (id_tiempo, id_local, id_categoria_bicicleta, cantidad_alquileres, cantidad_horas, monto_total)
-        SELECT T.id_tiempo, A.id_local, MB.id_categoria_bicicleta, COUNT(DISTINCT A.nro_alquiler) AS cantidad_alquileres, CAST(SUM(DATEDIFF(HOUR, A.fecha_inicio_alquiler, A.fecha_devolucion_real_alquiler)) AS NUMERIC(10,1)) AS cantidad_horas, SUM(A.importe_total_alquiler)
-        FROM SOMOS_QUATRO_LOCOS.Alquiler A
-            LEFT JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.anio = YEAR(A.fecha_inicio_alquiler) AND T.mes = MONTH(A.fecha_inicio_alquiler)
-            LEFT JOIN SOMOS_QUATRO_LOCOS.Bicicleta_Alquiler BA ON BA.nro_serie_bicicleta = A.nro_serie_bicicleta
-            JOIN SOMOS_QUATRO_LOCOS.Modelo_Bicicleta MB ON MB.modelo_bicicleta = BA.modelo_bicicleta
-        GROUP BY T.id_tiempo, A.id_local, MB.id_categoria_bicicleta
-        ORDER BY 1, 2, 3
+    INSERT INTO SOMOS_QUATRO_LOCOS.BI_Hechos_Alquileres
+        (id_tiempo, id_local, id_categoria_bicicleta, cantidad_alquileres,
+         cantidad_alquileres_devueltos, cantidad_horas, monto_total)
+    SELECT T.id_tiempo, A.id_local, MB.id_categoria_bicicleta,
+           COUNT(DISTINCT A.nro_alquiler),
+           SUM(CASE WHEN A.fecha_devolucion_real_alquiler IS NOT NULL THEN 1 ELSE 0 END),
+           SUM(CASE WHEN A.fecha_devolucion_real_alquiler IS NOT NULL
+                    THEN DATEDIFF(MINUTE, A.fecha_inicio_alquiler, A.fecha_devolucion_real_alquiler) / 60.0
+                    ELSE 0 END),
+           SUM(ISNULL(A.importe_total_alquiler, 0))
+    FROM SOMOS_QUATRO_LOCOS.Alquiler A
+        JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.anio = YEAR(A.fecha_inicio_alquiler)
+                                           AND T.mes = MONTH(A.fecha_inicio_alquiler)
+        JOIN SOMOS_QUATRO_LOCOS.Bicicleta_Alquiler BA ON BA.nro_serie_bicicleta = A.nro_serie_bicicleta
+        JOIN SOMOS_QUATRO_LOCOS.Modelo_Bicicleta MB ON MB.modelo_bicicleta = BA.modelo_bicicleta
+    WHERE A.id_local IS NOT NULL
+      AND A.fecha_inicio_alquiler IS NOT NULL
+    GROUP BY T.id_tiempo, A.id_local, MB.id_categoria_bicicleta
 END;
 GO
+
 -- Repuestos --
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Repuestos
 AS BEGIN
@@ -354,12 +367,17 @@ END;
 GO
 CREATE PROCEDURE SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Reparaciones
 AS BEGIN
-    INSERT INTO SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones (id_tiempo, id_local, promedio_dias_diferencia_fecha_entega)
-    SELECT 
-        T.id_tiempo, R.id_local, 
-        AVG(1.0 * DATEDIFF(DAY, R.fecha_entrega_estimada_reparacion, R.fecha_entrega_real_reparacion)) AS promedio_dias_diferencia_fecha_entega
-    FROM SOMOS_QUATRO_LOCOS.Reparacion R 
-        LEFT JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.anio = YEAR(R.fecha_ingreso_reparacion) AND T.mes = MONTH(R.fecha_ingreso_reparacion)
+    INSERT INTO SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones
+        (id_tiempo, id_local, cantidad_reparaciones_entregadas, suma_dias_desvio)
+    SELECT T.id_tiempo, R.id_local, COUNT(*),
+           SUM(DATEDIFF(DAY, R.fecha_entrega_estimada_reparacion, R.fecha_entrega_real_reparacion))
+    FROM SOMOS_QUATRO_LOCOS.Reparacion R
+        JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.anio = YEAR(R.fecha_ingreso_reparacion)
+                                           AND T.mes = MONTH(R.fecha_ingreso_reparacion)
+    WHERE R.id_local IS NOT NULL
+      AND R.fecha_ingreso_reparacion IS NOT NULL
+      AND R.fecha_entrega_estimada_reparacion IS NOT NULL
+      AND R.fecha_entrega_real_reparacion IS NOT NULL
     GROUP BY T.id_tiempo, R.id_local
 END;
 
@@ -447,9 +465,10 @@ AS
 GO
 
 -- Indicador 4: Promedio de cantidad de horas de alquiler de bicicletas, por local y mes
-CREATE VIEW SOMOS_QUATRO_LOCOS.BI_Cant_Horas_Alquiler_Bicicleta
+CREATE VIEW SOMOS_QUATRO_LOCOS.BI_Vista_Promedio_Horas_Alquiler
 AS
-    SELECT L.nombre_local, T.anio, T.mes, CAST(AVG(HA.cantidad_horas) AS NUMERIC(20,2)) AS promedio_horas
+    SELECT L.id_local, L.nombre_local, T.anio, T.mes,
+           CAST(SUM(HA.cantidad_horas) / NULLIF(SUM(HA.cantidad_alquileres_devueltos), 0) AS NUMERIC(20,2)) AS promedio_horas
     FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Alquileres HA
         JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.id_tiempo = HA.id_tiempo
         JOIN SOMOS_QUATRO_LOCOS.BI_Local L ON L.id_local = HA.id_local
@@ -482,10 +501,12 @@ GO
 -- Indicador 6. Desvío promedio de reparaciones (en días), entre fecha de entrega estimada y real, por local y trimestre
 CREATE VIEW SOMOS_QUATRO_LOCOS.BI_Vista_Promedio_Desvio_Reparaciones
 AS
-    SELECT id_local, T.anio, T.trimestre, AVG(R.promedio_dias_diferencia_fecha_entega) AS promedio_dias_diferencia_fecha_entega
+    SELECT L.id_local, L.nombre_local, T.anio, T.trimestre,
+           CAST(1.0 * SUM(R.suma_dias_desvio) / NULLIF(SUM(R.cantidad_reparaciones_entregadas), 0) AS NUMERIC(10,2)) AS promedio_dias_desvio
     FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones R
         JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.id_tiempo = R.id_tiempo
-    GROUP BY id_local, T.anio, T.trimestre
+        JOIN SOMOS_QUATRO_LOCOS.BI_Local L ON L.id_local = R.id_local
+    GROUP BY L.id_local, L.nombre_local, T.anio, T.trimestre
 GO
 
 -- Indicador 7: Ranking de categoría de repuestos más utilizados por mes.
