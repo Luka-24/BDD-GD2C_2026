@@ -356,11 +356,11 @@ CREATE PROCEDURE SOMOS_QUATRO_LOCOS.BI_Migrar_Hechos_Reparaciones
 AS BEGIN
     INSERT INTO SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones (id_tiempo, id_local, promedio_dias_diferencia_fecha_entega)
     SELECT 
-        id_local, T.id_tiempo, 
+        T.id_tiempo, R.id_local, 
         AVG(1.0 * DATEDIFF(DAY, R.fecha_entrega_estimada_reparacion, R.fecha_entrega_real_reparacion)) AS promedio_dias_diferencia_fecha_entega
     FROM SOMOS_QUATRO_LOCOS.Reparacion R 
         LEFT JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.anio = YEAR(R.fecha_ingreso_reparacion) AND T.mes = MONTH(R.fecha_ingreso_reparacion)
-    GROUP BY id_local, id_tiempo
+    GROUP BY T.id_tiempo, R.id_local
 END;
 
 GO
@@ -535,6 +535,39 @@ AS
         JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.id_tiempo = H.id_tiempo
         JOIN SOMOS_QUATRO_LOCOS.BI_Tipo_Producto TP ON TP.nro_tipo_producto = H.nro_tipo_producto
     GROUP BY T.anio, T.trimestre, TP.nro_tipo_producto, TP.tipo_producto
+GO
+
+-- Indicador 10: Importe total de compras mensuales por local   
+CREATE VIEW SOMOS_QUATRO_LOCOS.BI_Vista_Importe_Compras_Mensual
+AS
+    SELECT
+        T.anio, T.mes, L.id_Local, L.nombre_local,
+        SUM(H.monto_total) AS importe_total_compras
+    FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Compras H
+    JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.id_tiempo = H.id_tiempo
+    JOIN SOMOS_QUATRO_LOCOS.BI_Local L ON L.id_local = H.id_local
+    GROUP BY T.anio, T.mes, L.id_Local, L.nombre_local;
+GO
+
+-- Indicador 11: Facturación mensual del negocio (ventas + alquileres + reparaciones)  por local.
+CREATE VIEW SOMOS_QUATRO_LOCOS.BI_Vista_Facturacion_Mensual_Total
+AS
+    SELECT
+        T.anio, T.mes, L.id_local, L.nombre_local,
+        SUM(F.monto_total) AS facturacion_total
+    FROM (
+        SELECT id_tiempo, id_local, monto_total
+        FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Ventas
+        UNION ALL
+        SELECT id_tiempo, id_local, monto_total
+        FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Alquileres
+        UNION ALL
+        SELECT id_tiempo, id_local, monto_total
+        FROM SOMOS_QUATRO_LOCOS.BI_Hechos_Reparaciones_Ingresos
+    ) F
+        JOIN SOMOS_QUATRO_LOCOS.BI_Tiempo T ON T.id_tiempo = F.id_tiempo
+        JOIN SOMOS_QUATRO_LOCOS.BI_Local L ON L.id_local = F.id_local
+    GROUP BY T.anio, T.mes, L.id_local, L.nombre_local
 GO
 ---- EXECUTE -----
 GO
